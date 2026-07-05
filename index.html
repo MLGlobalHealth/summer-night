@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Summer Night — overnight heat in European cities</title>
+<meta name="description" content="Overnight feels-like (WBGT) heat forecasts for Paris and the largest European cities, updated automatically from Open-Meteo.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header>
+  <h1>🌙 Summer Night</h1>
+  <p class="subtitle">Overnight <strong>“feels like”</strong> heat forecasts for European cities
+    — will tonight be too hot to sleep?</p>
+  <p class="updated" id="updated">Loading…</p>
+</header>
+
+<main>
+  <nav class="city-pills" id="cityPills" aria-label="Choose a city"></nav>
+
+  <section id="cityPanel" class="hidden">
+    <h2 id="cityName"></h2>
+    <p class="headline" id="headline"></p>
+
+    <div class="table-wrap">
+      <table id="nightTable">
+        <thead>
+          <tr>
+            <th>Night</th>
+            <th>Feels-like<br>min</th>
+            <th>Air<br>min</th>
+            <th>Hours ≥ 20°<br><span class="thin">forecast (range)</span></th>
+            <th>Hours ≥ 25°<br><span class="thin">forecast (range)</span></th>
+            <th>Overnight curve<br><span class="thin">21:00 → 09:00</span></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <h3>Hourly forecast, next 7 days</h3>
+    <p class="chart-note">Feels-like (solid) and air temperature (dotted). Shaded bands are
+      the overnight windows (21:00–09:00 local time). Lines at 20° and 25°.</p>
+    <div id="chart" class="chart"></div>
+  </section>
+
+  <section>
+    <h3>All cities at a glance — coolest overnight feels-like</h3>
+    <div class="table-wrap">
+      <table id="overview"><thead></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <section class="explain">
+    <h3>How to read this</h3>
+    <p><strong>“Feels like”</strong> is a nighttime <a href="https://en.wikipedia.org/wiki/Wet-bulb_globe_temperature">Wet
+      Bulb Globe Temperature</a> (WBGT): it combines air temperature and humidity, because humid heat
+      prevents the body from cooling by sweating. With no sun at night, WBGT ≈ 0.7 × wet-bulb
+      temperature + 0.3 × air temperature. It is usually a few degrees <em>below</em> the air
+      temperature — so a feels-like of 25° is seriously oppressive.</p>
+    <p>An <strong>overnight window</strong> runs 21:00 to 09:00 the next morning, in each city's local
+      time. Each night is labeled by its evening date.</p>
+    <p><span class="chip warn">≥ 20°</span> feels-like all night: hot night, disturbed sleep likely.
+      <span class="chip danger">≥ 25°</span> feels-like all night: dangerous heat, little overnight
+      relief — a serious health risk for older people and those with medical conditions.</p>
+    <p><strong>Uncertainty:</strong> the “hours ≥ threshold” columns show the median across the
+      40-member ICON weather ensemble, with the 10th–90th percentile range in brackets — e.g.
+      “4 h (2–6)” means most ensemble members expect 2 to 6 hours at or above the threshold.</p>
+  </section>
+</main>
+
+<footer>
+  <p>Data: <a href="https://open-meteo.com/">Open-Meteo</a> (deterministic forecast + ICON ensemble),
+    updated every 3 hours. Static site, no tracking.
+    <a href="https://github.com/MLGlobalHealth/summer-night">Source on GitHub</a>.</p>
+  <p>Forecasts are indicative, not an official heat warning. Follow national meteorological services
+    for alerts.</p>
+</footer>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
