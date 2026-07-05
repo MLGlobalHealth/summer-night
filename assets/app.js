@@ -179,32 +179,32 @@
     if (city.stale) msg += ` <span class="stale-note">⚠ latest fetch failed; showing last good forecast.</span>`;
     head.innerHTML = msg;
 
-    /* Mortality / vulnerable-groups headline (multi-night, non-recovery) */
+    /* Sleep-debt headline: consecutive warm nights compound tiredness */
     const mort = document.getElementById("mortality");
     const run = longestRelief(city.nights);
     let mlevel = "", mmsg;
     if (run.len >= 3) {
       mlevel = "danger";
-      mmsg = `<strong>${run.len} nights in a row</strong> (${nightLabel(run.from)} → ${nightLabel(run.to)}) ` +
-             `with <strong>no overnight relief</strong> — feels-like never drops below 20°. ` +
-             `Consecutive hot nights with no nighttime recovery are the strongest driver of heat deaths ` +
-             `in older people; risk builds over successive nights.`;
+      mmsg = `<strong>${run.len} warm nights in a row</strong> (${nightLabel(run.from)} → ${nightLabel(run.to)}) ` +
+             `with <strong>no proper cool-down</strong> — feels-like never drops below 20°. ` +
+             `Back-to-back hot nights stack up sleep debt: expect grogginess, low focus and short fuses ` +
+             `by the end of the run.`;
     } else if (run.len === 2) {
       mlevel = "warn";
-      mmsg = `<strong>2 nights in a row</strong> (${nightLabel(run.from)} → ${nightLabel(run.to)}) ` +
-             `with no overnight relief (feels-like stays above 20°). Watch older and unwell people ` +
-             `if the run extends further.`;
+      mmsg = `<strong>2 warm nights in a row</strong> (${nightLabel(run.from)} → ${nightLabel(run.to)}) ` +
+             `with no proper cool-down (feels-like stays above 20°). A second poor night compounds the first — ` +
+             `plan for a tired day.`;
     } else if (run.len === 1) {
       mlevel = "warn";
-      mmsg = `One night (${nightLabel(run.from)}) with no overnight relief. Isolated hot nights are ` +
-             `lower-risk than consecutive ones, but check on vulnerable people.`;
+      mmsg = `One warm night (${nightLabel(run.from)}) with no proper cool-down. One-off hot nights are easier ` +
+             `to shrug off than a run of them.`;
     } else {
       mlevel = "";
-      mmsg = `Every night this week cools below 20° feels-like at some point — overnight recovery expected, ` +
-             `lower risk for vulnerable groups.`;
+      mmsg = `Every night this week cools below 20° feels-like at some point — you should get a recovery window ` +
+             `each night.`;
     }
     mort.className = "headline mortality " + mlevel;
-    mort.innerHTML = `<span class="tag">VULNERABLE</span> ` + mmsg;
+    mort.innerHTML = `<span class="tag">SLEEP DEBT</span> ` + mmsg;
 
     /* Night table */
     const allVals = city.nights.flatMap(n => n.feels_curve);

@@ -1,0 +1,26 @@
+/* Epi-specific styles, layered on ../assets/style.css */
+.epi-badge {
+  font-size: 0.5em; vertical-align: 0.35em; background: var(--accent); color: #0c1220;
+  padding: 0.1em 0.5em; border-radius: 6px; font-weight: 800; letter-spacing: 0.03em;
+}
+.backlink { margin-top: 0.4rem; }
+.backlink a { color: var(--accent); font-size: 0.9rem; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; align-items: start; }
+@media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+
+/* percentile pill in the night table */
+.pctl { font-weight: 800; }
+.pctl-bar {
+  display: block; height: 5px; border-radius: 3px; margin-top: 3px;
+  background: linear-gradient(90deg, var(--ok), var(--warn), var(--danger));
+}
+.pctl-hi { color: var(--danger); }
+.pctl-mid { color: var(--warn); }
+.pctl-lo { color: var(--muted); }
+
+.explain ul { padding-left: 1.1rem; }
+.explain li { margin: 0.3rem 0; }
+.explain code { background: #0c1220; padding: 0.05rem 0.35rem; border-radius: 4px; font-size: 0.85em; }
+#mortCountry, #mortNote { color: var(--muted); }
+.nodata { color: var(--muted); padding: 1.5rem 0.5rem; text-align: center; font-style: italic; }

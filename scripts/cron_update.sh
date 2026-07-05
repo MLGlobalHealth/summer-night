@@ -30,7 +30,7 @@ fi
     echo "WARN: fetch completed with partial failures (exit $status); publishing what succeeded"
   fi
 
-  git add data/forecast.json
+  git add data/
   if git diff --cached --quiet; then
     echo "no changes to publish"
   else

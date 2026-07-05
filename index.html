@@ -11,7 +11,7 @@
 <header>
   <h1>🌙 Summer Night</h1>
   <p class="subtitle">Overnight <strong>“feels like”</strong> heat forecasts for European cities
-    — will tonight be too hot to sleep?</p>
+    — will you sleep badly and drag through work tomorrow?</p>
   <p class="updated" id="updated">Loading…</p>
 </header>
 
@@ -67,21 +67,21 @@
     <p>An <strong>overnight window</strong> runs 21:00 to 09:00 the next morning, in each city's local
       time. Each night is labeled by its evening date.</p>
 
-    <h3>Two different questions</h3>
-    <p><span class="tag">SLEEP</span> <strong>Will it be an uncomfortable, restless night?</strong>
+    <h3>What the two lines mean</h3>
+    <p><span class="tag">SLEEP</span> <strong>Will tonight be an uncomfortable, restless night?</strong>
       Sleep degrades <em>continuously</em> as nights get warmer — there is no magic cut-off. As rough
       benchmarks, a feels-like that stays above <span class="chip warn">20°</span> all night means a
       warm, restless night for people without air-conditioning; above <span class="chip danger">25°</span>
       all night is oppressive, with very poor sleep. That is what the per-night table and the
       hours-above columns describe.</p>
-    <p><span class="tag">VULNERABLE</span> <strong>Are we worried about people dying?</strong> Heat
-      deaths in older people are driven less by any single hot night than by <em>consecutive</em> nights
-      where the body never gets a cool recovery window. The 2003 Paris heatwave study found multi-day
-      minimum (night-time) temperature — not daytime heat — predicted elderly deaths, and a 2025 study
-      across 34 European countries found back-to-back day-and-night “compound” heat carried more than
-      twice the mortality risk of daytime-only heat. So we flag <strong>runs of nights with no overnight
-      relief</strong> (feels-like never dropping below 20°), which matters most for the elderly, the
-      unwell, and other vulnerable groups.</p>
+    <p><span class="tag">SLEEP&nbsp;DEBT</span> <strong>Is it several bad nights in a row?</strong> One
+      hot night is easy to shrug off; a <em>run</em> of them stacks up. When the feels-like never drops
+      below 20° for consecutive nights, you don't get a proper recovery window, and the tiredness,
+      lost focus and irritability compound night after night. This line flags how long the current
+      no-cool-down streak is.</p>
+    <p class="epi-link">Looking for the <strong>public-health / epidemiology</strong> view — heat-mortality
+      risk for vulnerable groups, how tonight compares to each city's historical climate, and past
+      excess-mortality summers? See <a href="epi/">Summer Night · Epi &rarr;</a></p>
     <p><strong>Uncertainty:</strong> the “hours ≥ threshold” columns show the median across the
       40-member ICON weather ensemble, with the 10th–90th percentile range in brackets — e.g.
       “4 h (2–6)” means most ensemble members expect 2 to 6 hours at or above the threshold.</p>

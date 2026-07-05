@@ -87,15 +87,33 @@ flag to a per-city percentile is the most defensible future refinement.
 
 Two requests per city per update (22 total), well within Open-Meteo's free tier.
 
+## Two sites
+
+- **Everyday view** — `/` (https://mlgh.net/summer-night/). "Will you sleep badly and drag
+  through work tomorrow?" Per-night feels-like, hours-above-threshold, and a *sleep-debt*
+  line for consecutive warm nights. No mortality framing.
+- **Epi view** — `/epi/` (https://mlgh.net/summer-night/epi/). The public-health angle:
+  a heat-**mortality** signal (consecutive no-relief nights), tonight benchmarked against
+  each city's **climatology percentiles** (acclimatization-aware), and each country's
+  **historical summer excess mortality**.
+
 ## Repository layout
 
 ```
-index.html                  the site (plain HTML/CSS/JS, no build step, no dependencies)
-assets/style.css
-assets/app.js               rendering, hand-rolled SVG charts
-data/forecast.json          generated forecast data (committed by the cron job)
-scripts/update_forecast.py  fetches Open-Meteo, computes WBGT + night summaries (stdlib only)
-scripts/cron_update.sh      cron wrapper: fetch → commit → push, with lock + log
+index.html                  everyday site (plain HTML/CSS/JS, no build step, no dependencies)
+assets/style.css, app.js    shared styles + everyday-site rendering & SVG charts
+epi/index.html              epi site
+epi/epi.css, epi/app.js     epi-specific styles + rendering (joins the 3 data files)
+
+data/forecast.json          hourly forecast + per-night summaries (cron, ~3-hourly)
+data/climatology.json       per-city ERA5 percentiles + hot-nights-per-year (monthly)
+data/mortality.json         per-country summer excess mortality from Eurostat (weekly)
+
+scripts/update_forecast.py  Open-Meteo forecast → apparent temp + night summaries (stdlib)
+scripts/build_climatology.py Open-Meteo ERA5 archive → per-city climatology percentiles
+scripts/update_mortality.py Eurostat weekly deaths → summer excess mortality
+scripts/cron_update.sh      forecast cron: fetch → commit → push (lock + log)
+scripts/cron_data.sh        slow-data cron: mortality (weekly) / climatology (monthly)
 ```
 
 ## Reproducing from scratch
@@ -129,8 +147,14 @@ roughly that often:
 ```bash
 crontab -e
 # add:
-17 */3 * * * /path/to/summer-night/scripts/cron_update.sh
+17 */3 * * * /path/to/summer-night/scripts/cron_update.sh          # forecast, every 3h
+30 4  * * 1 /path/to/summer-night/scripts/cron_data.sh             # mortality, weekly (Mon)
+40 4  1 * * /path/to/summer-night/scripts/cron_data.sh climatology # + climatology, monthly
 ```
+
+The forecast (`cron_update.sh`) is the frequent one. `cron_data.sh` refreshes the epi
+datasets: Eurostat mortality weekly, and the heavier ERA5 climatology monthly (pass
+`climatology` to rebuild it — otherwise only mortality is fetched).
 
 The wrapper:
 

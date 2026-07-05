@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Summer Night · Epi — overnight heat &amp; health</title>
+<meta name="description" content="Technical view: overnight heat-mortality risk for European cities, tonight vs each city's climatology, and historical summer excess mortality.">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="epi.css">
+</head>
+<body>
+<header>
+  <h1>🌡️ Summer Night · <span class="epi-badge">Epi</span></h1>
+  <p class="subtitle">Overnight heat and health for European cities — mortality-relevant
+    metrics, tonight benchmarked against each city's own climate, and the historical record.</p>
+  <p class="updated" id="updated">Loading…</p>
+  <p class="backlink"><a href="../">&larr; Back to the everyday “will I sleep badly?” view</a></p>
+</header>
+
+<main>
+  <nav class="city-pills" id="cityPills" aria-label="Choose a city"></nav>
+
+  <section id="cityPanel" class="hidden">
+    <h2 id="cityName"></h2>
+
+    <p class="headline mortality" id="mortality"></p>
+
+    <h3>This week vs <span id="climoName">this city</span>'s climate
+      <span class="thin">(warm-season 2005–2024)</span></h3>
+    <p class="chart-note">“Percentile” places each night's overnight feels-like minimum within the
+      distribution of all May–Sep nights for this city. A high percentile means a night that is hot
+      <em>for here</em> — the acclimatization-aware framing the epidemiology favours.</p>
+    <div class="table-wrap">
+      <table id="nightTable">
+        <thead>
+          <tr>
+            <th>Night</th>
+            <th>Feels-like<br>min</th>
+            <th>Air<br>min</th>
+            <th>Percentile<br><span class="thin">for this city</span></th>
+            <th>Rarity<br><span class="thin">summer nights</span></th>
+            <th>Hours ≥ 20°<br><span class="thin">(range)</span></th>
+            <th>Hours ≥ 25°<br><span class="thin">(range)</span></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <h3>Hot nights per summer <span class="thin">(feels-like min ≥ 20°)</span></h3>
+        <p class="chart-note">Count of warm-season nights whose feels-like minimum stayed at or above
+          20° all night, by year. The dashed line is this city's 2005–2024 average.</p>
+        <div id="climoChart" class="chart"></div>
+      </div>
+      <div>
+        <h3>Summer excess mortality <span class="thin" id="mortCountry"></span></h3>
+        <p class="chart-note" id="mortNote">All-cause excess deaths in the hot season (weeks 22–36) vs a
+          trailing 5-year baseline. Country-level; summer spikes often coincide with heatwaves but are
+          not heat-attributed.</p>
+        <div id="mortChart" class="chart"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="explain">
+    <h3>Why this view exists</h3>
+    <p>The <a href="../">main site</a> answers a personal question — will tonight wreck your sleep. This
+      one is for the public-health question: <strong>are we worried about people dying?</strong> Heat
+      mortality falls mainly on the elderly, the chronically ill, the socially isolated and outdoor
+      workers, and it is driven less by a single hot night than by <strong>consecutive nights with no
+      overnight recovery</strong>. The 2003 Paris heatwave study found multi-day <em>minimum</em>
+      (night-time) temperature — not daytime heat — predicted elderly deaths; a 2025 study across 34
+      European countries found back-to-back day-and-night “compound” heat carried &gt;2× the mortality
+      risk of daytime-only heat.</p>
+
+    <h3>Absolute vs relative thresholds</h3>
+    <p>The everyday view uses fixed 20°/25° thresholds because they are easy to read. But whether a 20°
+      night is alarming <em>depends on the city</em>: it is a ~98th-percentile night in Paris (≈4 a year)
+      and essentially unheard of in London, yet routine in Rome (~60 a year). Populations acclimatize, so
+      the epidemiology uses <strong>location-specific percentiles</strong>. The “Percentile” and “Rarity”
+      columns here put tonight on each city's own scale — the anomaly, not the absolute number, is what
+      tracks excess deaths.</p>
+
+    <h3>Methods &amp; sources</h3>
+    <ul>
+      <li><strong>Feels-like</strong>: Steadman apparent temperature (shade formula, no solar term),
+        from 2 m temperature, relative humidity and 10 m wind.</li>
+      <li><strong>Forecast</strong>: <a href="https://open-meteo.com/">Open-Meteo</a> deterministic +
+        40-member ICON ensemble (for the hours-above ranges).</li>
+      <li><strong>Climatology</strong>: Open-Meteo historical archive (ERA5 reanalysis), warm-season
+        (May–Sep) overnight windows, 2005–2024. Percentiles are over this distribution.</li>
+      <li><strong>Excess mortality</strong>: Eurostat <em>Deaths by week and sex</em>
+        (<code>demo_r_mwk_ts</code>), national level. Summer = ISO weeks 22–36; expected = mean of the
+        same week over the prior 5 years (≥3 required); excess = observed − expected; P-score =
+        100·excess/expected. This is a deliberately simple baseline, <em>not</em> the official EuroMOMO
+        model, and is <strong>all-cause</strong>, not heat-attributed.</li>
+    </ul>
+
+    <h3>Caveats</h3>
+    <p class="caveat">Excess mortality is <strong>country-level and all-cause</strong>: a summer spike is
+      consistent with a heatwave but also with epidemics or other causes; attributing it to heat needs a
+      proper exposure model. Coverage varies — France's weekly series is short (from ~2016), the UK is
+      sparse post-Brexit, and <strong>Russia, Ukraine and Türkiye are not in Eurostat</strong> so those
+      cities show no mortality panel. Landmark heat summers for reference: <strong>2003</strong> ~70,000
+      excess deaths across Europe (~15,000 France), <strong>2022</strong> ~60,000, <strong>2023</strong>
+      ~47,000 (Ballester et al., <em>Nature Medicine</em>). As on the main site, we forecast
+      <em>outdoor</em> temperature while the exposure that kills is largely <em>indoor</em>.</p>
+  </section>
+</main>
+
+<footer>
+  <p>Data: <a href="https://open-meteo.com/">Open-Meteo</a> (forecast + ERA5) &amp;
+    <a href="https://ec.europa.eu/eurostat">Eurostat</a> (weekly deaths). Static site, no tracking.
+    <a href="https://github.com/MLGlobalHealth/summer-night">Source on GitHub</a>.</p>
+  <p>Research, not an official heat–health warning. Follow national meteorological and public-health
+    services for alerts.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

@@ -115,6 +115,11 @@ tr.danger td.night-label::after { content: " 🔥"; }
   border-left: 3px solid var(--warn); padding-left: 0.8rem; margin-top: 1.2rem;
   color: var(--text);
 }
+.epi-link {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 0.7rem 0.9rem; color: var(--text);
+}
+.epi-link a { color: var(--accent); font-weight: 600; white-space: nowrap; }
 
 footer {
   text-align: center; color: var(--muted); font-size: 0.85rem;
