@@ -5,7 +5,8 @@ for Paris and the 10 largest European cities, with an emphasis on nights where t
 feels-like temperature never drops below 20 °C or 25 °C — the nights that are hardest
 on human health.
 
-**Live site:** https://mlglobalhealth.github.io/summer-night/
+**Live site:** https://mlgh.net/summer-night/
+(also https://mlglobalhealth.github.io/summer-night/ — the org's custom Pages domain)
 
 ## What it shows
 
