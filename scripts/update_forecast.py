@@ -5,14 +5,27 @@ Writes data/forecast.json consumed by the static site. Uses only the
 Python standard library.
 
 Two API calls per city:
-  1. Forecast API  -> best-estimate hourly temperature + relative humidity
+  1. Forecast API  -> best-estimate hourly temperature, humidity, wind
   2. Ensemble API  -> ~40 ICON ensemble members, used to put uncertainty
                       ranges on "hours above threshold" per night
 
-"Feels like" is a nighttime Wet Bulb Globe Temperature: with no solar
-load the globe temperature ~= air temperature, so
-    WBGT_night = 0.7 * T_wetbulb + 0.3 * T_air
-with T_wetbulb from the Stull (2011) approximation.
+"Feels like" is the Steadman **apparent temperature** (the Australian BoM
+shade formulation):
+    AT = Ta + 0.33*e - 0.70*ws - 4.0
+with vapour pressure e from air temperature and relative humidity and ws
+the 10 m wind speed (m/s). The shade formula has no solar-radiation term,
+which makes it the right choice overnight. A 2026 literature review found
+that for temperate-European heat mortality, apparent temperature is the
+humidity-inclusive index that actually adds value (WBGT/wet-bulb do not);
+for sleep it tracks the continuous degradation of sleep with warmth.
+
+Two outcomes are summarised per night:
+  - comfort/sleep : hours the feels-like stays >= 20 C / >= 25 C
+  - mortality     : "no overnight relief" nights (feels-like minimum never
+                    drops below 20 C), whose *consecutive runs* the front
+                    end turns into an elderly-mortality signal, following
+                    the Paris-2003 and 2025 compound-heat findings that
+                    multi-day lack of nighttime recovery drives deaths.
 
 Fail-safe: if a city's fetch fails, its previous entry from the existing
 data/forecast.json is kept, so the site never goes blank.
@@ -38,7 +51,11 @@ ENSEMBLE_API = "https://ensemble-api.open-meteo.com/v1/ensemble"
 NIGHT_START = 21
 NIGHT_HOURS = 12
 
+# Absolute feels-like thresholds (deg C apparent temperature).
 THRESHOLDS = [20, 25]
+# A night gives "no overnight relief" (mortality-relevant) if the feels-like
+# minimum never drops below this - the body gets no cool recovery window.
+RELIEF_FLOOR = 20
 
 # Paris + the 10 largest European cities by population (city proper).
 CITIES = [
@@ -76,21 +93,15 @@ def fetch_json(url, params, retries=3, timeout=60):
     raise RuntimeError(f"failed after {retries} attempts: {url}: {last_err}")
 
 
-def wet_bulb(t, rh):
-    """Stull (2011) wet-bulb temperature approximation (deg C, RH in %)."""
+def apparent_temp(t, rh, ws):
+    """Steadman (BoM shade) apparent temperature. t in C, rh in %, ws in m/s.
+
+    No solar term, so it is appropriate overnight. Vapour pressure from the
+    August-Roche-Magnus saturation formula scaled by relative humidity.
+    """
     rh = max(rh, 1.0)
-    return (
-        t * math.atan(0.151977 * math.sqrt(rh + 8.313659))
-        + math.atan(t + rh)
-        - math.atan(rh - 1.676331)
-        + 0.00391838 * rh ** 1.5 * math.atan(0.023101 * rh)
-        - 4.686035
-    )
-
-
-def night_wbgt(t, rh):
-    """Nighttime WBGT: no solar load, globe temp ~= air temp."""
-    return 0.7 * wet_bulb(t, rh) + 0.3 * t
+    e = (rh / 100.0) * 6.105 * math.exp(17.27 * t / (237.7 + t))
+    return t + 0.33 * e - 0.70 * ws - 4.0
 
 
 def percentile(sorted_vals, p):
@@ -116,7 +127,7 @@ def night_window_indices(times, evening_date):
     return idx
 
 
-def summarize_nights(times, temps, wbgts, ensemble_wbgt, now_local):
+def summarize_nights(times, temps, feels, ensemble_feels, now_local):
     """Build per-night summaries. Nights are labeled by their evening date."""
     today = now_local.date()
     first_evening = today if now_local.hour >= 9 else today - timedelta(days=1)
@@ -126,39 +137,48 @@ def summarize_nights(times, temps, wbgts, ensemble_wbgt, now_local):
         idx = night_window_indices(times, evening.isoformat())
         if idx is None:
             continue
-        w = [wbgts[i] for i in idx]
+        w = [feels[i] for i in idx]
         t = [temps[i] for i in idx]
         if any(v is None for v in w) or any(v is None for v in t):
             continue
         min_i = min(range(len(w)), key=lambda i: w[i])
+        min_feels = min(w)
         night = {
             "date": evening.isoformat(),
-            "min_wbgt": round(min(w), 1),
-            "min_wbgt_time": times[idx[min_i]][11:16],
+            "min_feels": round(min_feels, 1),
+            "min_feels_time": times[idx[min_i]][11:16],
             "min_temp": round(min(t), 1),
-            "wbgt_curve": [round(v, 1) for v in w],
+            "feels_curve": [round(v, 1) for v in w],
             "hours_ge": {},
             "all_above": {},
+            # Mortality-relevant: coolest point never drops below the floor,
+            # so there is no overnight recovery window.
+            "no_relief": bool(min_feels >= RELIEF_FLOOR),
             "ens": {},
         }
         for th in THRESHOLDS:
             night["hours_ge"][str(th)] = sum(1 for v in w if v >= th)
-            night["all_above"][str(th)] = bool(min(w) > th)
+            night["all_above"][str(th)] = bool(min_feels > th)
 
-        # Ensemble spread on hours-above-threshold for this window.
+        # Ensemble spread on hours-above-threshold and no-relief probability.
         member_hours = {str(th): [] for th in THRESHOLDS}
         member_all_above = {str(th): 0 for th in THRESHOLDS}
+        member_no_relief = 0
         n_members = 0
-        for member in ensemble_wbgt:
+        for member in ensemble_feels:
             vals = [member[i] if i < len(member) else None for i in idx]
             if any(v is None for v in vals):
                 continue
             n_members += 1
+            m_min = min(vals)
+            if m_min >= RELIEF_FLOOR:
+                member_no_relief += 1
             for th in THRESHOLDS:
                 member_hours[str(th)].append(sum(1 for v in vals if v >= th))
-                if min(vals) > th:
+                if m_min > th:
                     member_all_above[str(th)] += 1
         if n_members >= 5:
+            night["prob_no_relief"] = round(member_no_relief / n_members, 2)
             for th in THRESHOLDS:
                 hrs = sorted(member_hours[str(th)])
                 night["ens"][str(th)] = {
@@ -173,10 +193,12 @@ def summarize_nights(times, temps, wbgts, ensemble_wbgt, now_local):
 
 
 def build_city(city):
+    hourly_vars = "temperature_2m,relative_humidity_2m,wind_speed_10m"
     det = fetch_json(FORECAST_API, {
         "latitude": city["lat"],
         "longitude": city["lon"],
-        "hourly": "temperature_2m,relative_humidity_2m",
+        "hourly": hourly_vars,
+        "wind_speed_unit": "ms",
         "forecast_days": 8,
         "past_days": 1,
         "timezone": "auto",
@@ -184,7 +206,8 @@ def build_city(city):
     ens = fetch_json(ENSEMBLE_API, {
         "latitude": city["lat"],
         "longitude": city["lon"],
-        "hourly": "temperature_2m,relative_humidity_2m",
+        "hourly": hourly_vars,
+        "wind_speed_unit": "ms",
         "models": "icon_seamless",
         "forecast_days": 8,
         "past_days": 1,
@@ -194,39 +217,49 @@ def build_city(city):
     times = det["hourly"]["time"]
     temps = det["hourly"]["temperature_2m"]
     rhs = det["hourly"]["relative_humidity_2m"]
-    wbgts = [
-        night_wbgt(t, rh) if t is not None and rh is not None else None
-        for t, rh in zip(temps, rhs)
+    winds = det["hourly"]["wind_speed_10m"]
+    feels = [
+        apparent_temp(t, rh, ws) if None not in (t, rh, ws) else None
+        for t, rh, ws in zip(temps, rhs, winds)
     ]
 
-    # Ensemble: pair temperature/humidity members, compute WBGT per member,
-    # then align onto the deterministic time axis.
+    # Ensemble: pair temperature / humidity / wind members, compute apparent
+    # temperature per member, then align onto the deterministic time axis.
     ens_hourly = ens["hourly"]
     ens_times = ens_hourly["time"]
     time_map = {ts: i for i, ts in enumerate(ens_times)}
     suffixes = sorted(
         k[len("temperature_2m"):] for k in ens_hourly
-        if k.startswith("temperature_2m") and "relative_humidity_2m" + k[len("temperature_2m"):] in ens_hourly
+        if k.startswith("temperature_2m")
+        and "relative_humidity_2m" + k[len("temperature_2m"):] in ens_hourly
+        and "wind_speed_10m" + k[len("temperature_2m"):] in ens_hourly
     )
-    ensemble_wbgt = []
+    ensemble_feels = []
     for suf in suffixes:
         et = ens_hourly["temperature_2m" + suf]
         er = ens_hourly["relative_humidity_2m" + suf]
+        ew = ens_hourly["wind_speed_10m" + suf]
         member = []
         for ts in times:
             j = time_map.get(ts)
-            if j is None or j >= len(et) or et[j] is None or er[j] is None:
+            if j is None or j >= len(et) or None in (et[j], er[j], ew[j]):
                 member.append(None)
             else:
-                member.append(night_wbgt(et[j], er[j]))
-        ensemble_wbgt.append(member)
+                member.append(apparent_temp(et[j], er[j], ew[j]))
+        ensemble_feels.append(member)
 
     offset = timedelta(seconds=det["utc_offset_seconds"])
     now_local = datetime.now(timezone.utc) + offset
 
-    nights = summarize_nights(times, temps, wbgts, ensemble_wbgt, now_local)
+    nights = summarize_nights(times, temps, feels, ensemble_feels, now_local)
     if not nights:
         raise RuntimeError(f"no complete nights computed for {city['id']}")
+
+    # Longest run of consecutive no-relief nights within the forecast window.
+    max_run = cur = 0
+    for n in nights:
+        cur = cur + 1 if n["no_relief"] else 0
+        max_run = max(max_run, cur)
 
     return {
         **city,
@@ -235,10 +268,11 @@ def build_city(city):
         "hourly": {
             "time": times,
             "temp": [None if v is None else round(v, 1) for v in temps],
-            "wbgt": [None if v is None else round(v, 1) for v in wbgts],
+            "feels": [None if v is None else round(v, 1) for v in feels],
         },
         "nights": nights,
-        "ensemble_members": len(ensemble_wbgt),
+        "max_no_relief_run": max_run,
+        "ensemble_members": len(ensemble_feels),
     }
 
 
@@ -273,8 +307,10 @@ def main():
     out = {
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": "Open-Meteo (open-meteo.com), ICON ensemble for uncertainty",
+        "index": "apparent_temperature",
         "night_window": {"start_hour": NIGHT_START, "hours": NIGHT_HOURS},
         "thresholds": THRESHOLDS,
+        "relief_floor": RELIEF_FLOOR,
         "cities": cities_out,
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)

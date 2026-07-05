@@ -8,7 +8,6 @@
                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   let DATA = null;
-  let selected = null;
 
   // All times in the data are local to each city; parse them as if UTC so
   // arithmetic is consistent and the browser's timezone never interferes.
@@ -19,10 +18,26 @@
     return `${DAYS[d.getUTCDay()]} ${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
   }
 
+  // Comfort severity from the feels-like overnight minimum.
   function severity(night) {
     if (night.all_above["25"]) return "danger";
     if (night.all_above["20"]) return "warn";
     return "";
+  }
+
+  // Longest run of consecutive no-relief nights and its date span.
+  function longestRelief(nights) {
+    let best = { len: 0, start: null, end: null };
+    let cur = 0, startIdx = 0;
+    for (let i = 0; i < nights.length; i++) {
+      if (nights[i].no_relief) {
+        if (cur === 0) startIdx = i;
+        cur++;
+        if (cur > best.len) best = { len: cur, start: startIdx, end: i };
+      } else cur = 0;
+    }
+    if (!best.len) return { len: 0 };
+    return { len: best.len, from: nights[best.start].date, to: nights[best.end].date };
   }
 
   function fmtHours(night, th) {
@@ -39,7 +54,7 @@
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   }
 
-  /* ---------- sparkline: one night's 12-hour WBGT curve ---------- */
+  /* ---------- sparkline: one night's 12-hour feels-like curve ---------- */
   function sparkline(curve, lo, hi) {
     const W = 150, H = 44, PAD = 3;
     const y = v => H - PAD - ((v - lo) / (hi - lo || 1)) * (H - 2 * PAD);
@@ -67,12 +82,12 @@
     const i0 = Math.max(0, times.findIndex(t => t >= start));
     const idx = [];
     for (let i = i0; i < times.length; i++) {
-      if (city.hourly.wbgt[i] !== null || city.hourly.temp[i] !== null) idx.push(i);
+      if (city.hourly.feels[i] !== null || city.hourly.temp[i] !== null) idx.push(i);
     }
     if (idx.length < 2) return "<p>No hourly data.</p>";
 
     const t0 = times[idx[0]], t1 = times[idx[idx.length - 1]];
-    const vals = idx.flatMap(i => [city.hourly.wbgt[i], city.hourly.temp[i]]).filter(v => v !== null);
+    const vals = idx.flatMap(i => [city.hourly.feels[i], city.hourly.temp[i]]).filter(v => v !== null);
     let lo = Math.min(...vals, 18), hi = Math.max(...vals, 27);
     lo = Math.floor(lo / 5) * 5; hi = Math.ceil(hi / 5) * 5;
 
@@ -98,6 +113,7 @@
       if (th <= lo || th >= hi) continue;
       const col = th >= 25 ? "var(--danger)" : "var(--warn)";
       s += `<line x1="${M.l}" x2="${W - M.r}" y1="${y(th)}" y2="${y(th)}" stroke="${col}" stroke-width="1.5" stroke-dasharray="5 4" opacity="0.85"/>`;
+      s += `<text x="${W - M.r - 2}" y="${y(th) - 3}" text-anchor="end" fill="${col}" font-size="11" opacity="0.9">${th}° feels-like</text>`;
     }
     // Day labels at each local noon
     for (let t = t0; t <= t1; t += 3600e3) {
@@ -123,7 +139,7 @@
       return `<path d="${d}" fill="none" stroke="${dashed ? "var(--muted)" : "var(--accent)"}" stroke-width="${dashed ? 1.5 : 2.5}"${dashed ? ' stroke-dasharray="2 4"' : ""}/>`;
     }
     s += path(city.hourly.temp, true);
-    s += path(city.hourly.wbgt, false);
+    s += path(city.hourly.feels, false);
 
     // Legend
     s += `<line x1="${M.l + 8}" x2="${M.l + 36}" y1="${M.t + 8}" y2="${M.t + 8}" stroke="var(--accent)" stroke-width="2.5"/>` +
@@ -139,40 +155,69 @@
       `${city.name}, ${city.country}` + (city.stale ? " (older data)" : "");
 
     const tonight = city.nights[0];
+
+    /* Comfort / sleep headline */
     const head = document.getElementById("headline");
     const sev = severity(tonight);
     head.className = "headline " + sev;
     const ens20 = tonight.ens && tonight.ens["20"];
-    const below20 = 12 - tonight.hours_ge["20"];
-    let msg = `<strong>Tonight (${nightLabel(tonight.date)}):</strong> feels-like minimum ` +
-              `<strong>${tonight.min_wbgt}°</strong> at ${tonight.min_wbgt_time} ` +
+    let msg = `<span class="tag">SLEEP</span> <strong>Tonight (${nightLabel(tonight.date)}):</strong> ` +
+              `feels-like minimum <strong>${tonight.min_feels}°</strong> at ${tonight.min_feels_time} ` +
               `(air minimum ${tonight.min_temp}°). `;
     if (sev === "danger") {
-      msg += `<strong>Feels-like stays above 25° all night — dangerous heat, no overnight relief.</strong>`;
+      msg += `<strong>Feels-like stays above 25° all night — oppressive, very poor sleep likely.</strong>`;
     } else if (sev === "warn") {
-      msg += `<strong>Feels-like stays above 20° all night — expect disturbed sleep.</strong>`;
+      msg += `<strong>Feels-like stays above 20° all night — a warm, restless night.</strong>`;
     } else if (ens20) {
+      const belowMed = Math.round(12 - ens20.median);
       const lo = Math.round(12 - ens20.p90), hi = Math.round(12 - ens20.p10);
-      msg += `Around <strong>${Math.round(12 - ens20.median)} of 12 overnight hours</strong> ` +
-             `(likely ${lo}–${hi}) below 20° feels-like.`;
+      msg += `Around <strong>${belowMed} of 12 overnight hours</strong> (likely ${lo}–${hi}) ` +
+             `below 20° feels-like — comfortable enough for most sleepers.`;
     } else {
-      msg += `${below20} of 12 overnight hours below 20° feels-like.`;
+      msg += `${12 - tonight.hours_ge["20"]} of 12 overnight hours below 20° feels-like.`;
     }
     if (city.stale) msg += ` <span class="stale-note">⚠ latest fetch failed; showing last good forecast.</span>`;
     head.innerHTML = msg;
 
-    const allVals = city.nights.flatMap(n => n.wbgt_curve);
-    const lo = Math.min(...allVals, 18) - 1, hi = Math.max(...allVals, 26) + 1;
+    /* Mortality / vulnerable-groups headline (multi-night, non-recovery) */
+    const mort = document.getElementById("mortality");
+    const run = longestRelief(city.nights);
+    let mlevel = "", mmsg;
+    if (run.len >= 3) {
+      mlevel = "danger";
+      mmsg = `<strong>${run.len} nights in a row</strong> (${nightLabel(run.from)} → ${nightLabel(run.to)}) ` +
+             `with <strong>no overnight relief</strong> — feels-like never drops below 20°. ` +
+             `Consecutive hot nights with no nighttime recovery are the strongest driver of heat deaths ` +
+             `in older people; risk builds over successive nights.`;
+    } else if (run.len === 2) {
+      mlevel = "warn";
+      mmsg = `<strong>2 nights in a row</strong> (${nightLabel(run.from)} → ${nightLabel(run.to)}) ` +
+             `with no overnight relief (feels-like stays above 20°). Watch older and unwell people ` +
+             `if the run extends further.`;
+    } else if (run.len === 1) {
+      mlevel = "warn";
+      mmsg = `One night (${nightLabel(run.from)}) with no overnight relief. Isolated hot nights are ` +
+             `lower-risk than consecutive ones, but check on vulnerable people.`;
+    } else {
+      mlevel = "";
+      mmsg = `Every night this week cools below 20° feels-like at some point — overnight recovery expected, ` +
+             `lower risk for vulnerable groups.`;
+    }
+    mort.className = "headline mortality " + mlevel;
+    mort.innerHTML = `<span class="tag">VULNERABLE</span> ` + mmsg;
 
+    /* Night table */
+    const allVals = city.nights.flatMap(n => n.feels_curve);
+    const lo = Math.min(...allVals, 18) - 1, hi = Math.max(...allVals, 26) + 1;
     const tbody = document.querySelector("#nightTable tbody");
     tbody.innerHTML = city.nights.map(n => `
       <tr class="${severity(n)}">
-        <td class="night-label">${nightLabel(n.date)}</td>
-        <td><span class="big">${n.min_wbgt}°</span><span class="sub">at ${esc(n.min_wbgt_time)}</span></td>
+        <td class="night-label">${nightLabel(n.date)}${n.no_relief ? ' <span class="norelief" title="Feels-like never drops below 20° — no overnight recovery">no relief</span>' : ""}</td>
+        <td><span class="big">${n.min_feels}°</span><span class="sub">at ${esc(n.min_feels_time)}</span></td>
         <td>${n.min_temp}°</td>
         <td>${fmtHours(n, 20)}</td>
         <td>${fmtHours(n, 25)}</td>
-        <td>${sparkline(n.wbgt_curve, lo, hi)}</td>
+        <td>${sparkline(n.feels_curve, lo, hi)}</td>
       </tr>`).join("");
 
     document.getElementById("chart").innerHTML = bigChart(city);
@@ -189,7 +234,7 @@
       const cells = dates.map(d => {
         const n = byDate[d];
         if (!n) return "<td>–</td>";
-        return `<td class="${severity(n)}" title="${esc(c.name)}, ${nightLabel(d)}: feels-like min ${n.min_wbgt}°">${n.min_wbgt}°</td>`;
+        return `<td class="${severity(n)}" title="${esc(c.name)}, ${nightLabel(d)}: feels-like min ${n.min_feels}°${n.no_relief ? " — no overnight relief" : ""}">${n.min_feels}°</td>`;
       }).join("");
       return `<tr data-city="${esc(c.id)}"><td class="city-cell">${esc(c.name)}${c.stale ? " ⚠" : ""}</td>${cells}</tr>`;
     }).join("");
@@ -199,7 +244,6 @@
   }
 
   function selectCity(id) {
-    selected = id;
     document.querySelectorAll(".city-pills button").forEach(b =>
       b.classList.toggle("active", b.dataset.city === id));
     const city = DATA.cities.find(c => c.id === id);

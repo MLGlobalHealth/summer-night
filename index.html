@@ -21,6 +21,7 @@
   <section id="cityPanel" class="hidden">
     <h2 id="cityName"></h2>
     <p class="headline" id="headline"></p>
+    <p class="headline mortality" id="mortality"></p>
 
     <div class="table-wrap">
       <table id="nightTable">
@@ -39,8 +40,8 @@
     </div>
 
     <h3>Hourly forecast, next 7 days</h3>
-    <p class="chart-note">Feels-like (solid) and air temperature (dotted). Shaded bands are
-      the overnight windows (21:00–09:00 local time). Lines at 20° and 25°.</p>
+    <p class="chart-note">Feels-like / apparent temperature (solid) and air temperature (dotted).
+      Shaded bands are the overnight windows (21:00–09:00 local time). Lines at 20° and 25° feels-like.</p>
     <div id="chart" class="chart"></div>
   </section>
 
@@ -53,19 +54,42 @@
 
   <section class="explain">
     <h3>How to read this</h3>
-    <p><strong>“Feels like”</strong> is a nighttime <a href="https://en.wikipedia.org/wiki/Wet-bulb_globe_temperature">Wet
-      Bulb Globe Temperature</a> (WBGT): it combines air temperature and humidity, because humid heat
-      prevents the body from cooling by sweating. With no sun at night, WBGT ≈ 0.7 × wet-bulb
-      temperature + 0.3 × air temperature. It is usually a few degrees <em>below</em> the air
-      temperature — so a feels-like of 25° is seriously oppressive.</p>
+    <p><strong>“Feels like”</strong> is the <a href="https://en.wikipedia.org/wiki/Apparent_temperature">apparent
+      temperature</a> (Steadman): air temperature adjusted for humidity and wind, because humid air
+      slows the body's cooling by sweat. We use the shade formulation, which has no sunshine term and
+      is therefore the right one for overnight. On humid nights it reads a little <em>above</em> the
+      air temperature; in dry, breezy air a little below.</p>
+    <p><strong>Why apparent temperature and not WBGT or wet-bulb?</strong> A review of the heat-mortality
+      literature finds that in temperate Europe, plain air temperature predicts heat deaths about as
+      well as any humidity index, and where a humidity-inclusive index adds anything it is apparent
+      temperature. WBGT is built for daytime physical exertion in the sun and is not the validated
+      choice for overnight sleep or for European mortality.</p>
     <p>An <strong>overnight window</strong> runs 21:00 to 09:00 the next morning, in each city's local
       time. Each night is labeled by its evening date.</p>
-    <p><span class="chip warn">≥ 20°</span> feels-like all night: hot night, disturbed sleep likely.
-      <span class="chip danger">≥ 25°</span> feels-like all night: dangerous heat, little overnight
-      relief — a serious health risk for older people and those with medical conditions.</p>
+
+    <h3>Two different questions</h3>
+    <p><span class="tag">SLEEP</span> <strong>Will it be an uncomfortable, restless night?</strong>
+      Sleep degrades <em>continuously</em> as nights get warmer — there is no magic cut-off. As rough
+      benchmarks, a feels-like that stays above <span class="chip warn">20°</span> all night means a
+      warm, restless night for people without air-conditioning; above <span class="chip danger">25°</span>
+      all night is oppressive, with very poor sleep. That is what the per-night table and the
+      hours-above columns describe.</p>
+    <p><span class="tag">VULNERABLE</span> <strong>Are we worried about people dying?</strong> Heat
+      deaths in older people are driven less by any single hot night than by <em>consecutive</em> nights
+      where the body never gets a cool recovery window. The 2003 Paris heatwave study found multi-day
+      minimum (night-time) temperature — not daytime heat — predicted elderly deaths, and a 2025 study
+      across 34 European countries found back-to-back day-and-night “compound” heat carried more than
+      twice the mortality risk of daytime-only heat. So we flag <strong>runs of nights with no overnight
+      relief</strong> (feels-like never dropping below 20°), which matters most for the elderly, the
+      unwell, and other vulnerable groups.</p>
     <p><strong>Uncertainty:</strong> the “hours ≥ threshold” columns show the median across the
       40-member ICON weather ensemble, with the 10th–90th percentile range in brackets — e.g.
       “4 h (2–6)” means most ensemble members expect 2 to 6 hours at or above the threshold.</p>
+    <p class="caveat"><strong>Important caveat:</strong> we forecast <em>outdoor</em> temperature, but
+      what affects sleep and health is the temperature <em>in the bedroom</em>. Homes without
+      air-conditioning often stay warmer than the outside air overnight and cool more slowly, so indoor
+      conditions can be worse than these numbers suggest. Thresholds are indicative, not an official
+      heat warning — follow your national weather service for alerts.</p>
   </section>
 </main>
 

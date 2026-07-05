@@ -20,37 +20,60 @@ local time**, labeled by the evening's date):
 - A **12-hour sparkline** of the overnight curve, and a 7-day hourly chart
 - Row highlighting: **orange** when feels-like stays ≥ 20 °C all night, **red** when it
   stays ≥ 25 °C all night
+- A **vulnerable-group / mortality banner** flagging *runs of consecutive nights with no
+  overnight relief*, and a "no relief" badge on each such night
 - An **all-cities overview grid** (cities × nights, colored by severity)
 
-## "Feels like": nighttime WBGT
+## "Feels like": apparent temperature
 
-Humid heat is more dangerous than dry heat because sweating stops working. The
-Wet Bulb Globe Temperature (WBGT) combines temperature, humidity, and radiant load.
-At night there is no solar load, so we use the standard indoor/no-sun formulation:
+"Feels like" is the **Steadman apparent temperature** (the Australian Bureau of
+Meteorology *shade* formulation):
 
 ```
-WBGT_night = 0.7 × T_wetbulb + 0.3 × T_air
+AT = Ta + 0.33·e − 0.70·ws − 4.0
+e  = (RH/100) · 6.105 · exp(17.27·Ta / (237.7 + Ta))       (vapour pressure, hPa)
 ```
 
-with the wet-bulb temperature from the Stull (2011) approximation using air
-temperature and relative humidity.
+from air temperature `Ta` (°C), relative humidity `RH` (%) and 10 m wind speed
+`ws` (m/s). The shade formula has **no solar-radiation term**, which makes it the
+correct choice overnight. On humid nights it reads slightly *above* air
+temperature; in dry, breezy air slightly below. We compute it identically for the
+deterministic forecast and for every ensemble member, so the uncertainty ranges are
+internally consistent.
 
-### Are 20 °C / 25 °C the right thresholds for WBGT?
+### Why apparent temperature, not WBGT / wet-bulb?
 
-They are defensible but note that WBGT runs **a few degrees below air temperature**
-(except in saturated air), so these thresholds are *stricter* than the same numbers
-applied to air temperature:
+An earlier version used nighttime WBGT. A literature review (see
+[`docs/RESEARCH.md`](docs/RESEARCH.md)) changed this:
 
-- Air-temperature research uses **"tropical nights" (Tmin ≥ 20 °C)** as the classic
-  sleep-disruption / excess-mortality indicator. A *feels-like* (WBGT) of 20 °C
-  overnight typically corresponds to air temperatures of roughly 23–26 °C.
-- Occupational WBGT guidance treats **≥ 25 °C WBGT as high strain even at rest**;
-  a whole night at that level means essentially no physiological recovery.
+- **WBGT is built for daytime, in-the-sun physical exertion** and is only the
+  best-predicting index for heat mortality in a few tropical countries. It is *not*
+  validated for overnight sleep or for temperate-European mortality.
+- For heat **mortality** in temperate Europe, plain air temperature predicts about
+  as well as any humidity index (Lo et al. 2023, 39 countries; Armstrong et al.
+  2019, 445 cities). Where a humidity-inclusive index helps at all in Northern /
+  Eastern Europe, it is **apparent temperature** — so that is what we use.
 
-So: **≥ 20 °C WBGT all night ≈ a bad, sleep-disrupting night; ≥ 25 °C WBGT all night
-≈ a dangerous one.** If you want thresholds aligned with the older air-temperature
-literature instead, 20/25 °C on the *air minimum* column are the classic
-"tropical night" / "super-tropical night" definitions.
+### The two outcomes, and their thresholds
+
+The site answers two different questions with two different signals:
+
+- **Sleep / comfort** — a per-night measure. Sleep degrades *continuously* with
+  warmth (no sharp cut-off), but as benchmarks a feels-like that stays **≥ 20 °C**
+  all night is a warm, restless night and **≥ 25 °C** all night is oppressive. This
+  drives the per-night table and the hours-above-threshold columns.
+- **Vulnerable-group mortality** — a *multi-night* measure. Heat deaths in the
+  elderly are driven by **consecutive nights with no overnight recovery**, not
+  single hot nights: the 2003 Paris study found multi-day *minimum* (night)
+  temperature predicted elderly deaths while daytime temperature did not, and a 2025
+  study across 34 European countries found back-to-back day-and-night "compound"
+  heat carried >2× the mortality risk of daytime-only heat. We flag **runs of nights
+  with no overnight relief** — the feels-like minimum never dropping below 20 °C.
+
+Thresholds are **absolute** (20 / 25 °C) for readability. The epidemiology actually
+favours *location-specific / percentile* thresholds because temperate populations
+acclimatize (22 °C is routine in Rome, alarming in London); moving the mortality
+flag to a per-city percentile is the most defensible future refinement.
 
 ## Data source
 
@@ -59,7 +82,8 @@ literature instead, 20/25 °C on the *air minimum* column are the classic
 - **Forecast API** (`api.open-meteo.com/v1/forecast`): best-estimate hourly
   temperature and relative humidity, 8 days, in each city's local timezone
 - **Ensemble API** (`ensemble-api.open-meteo.com/v1/ensemble`, `icon_seamless`):
-  40 ensemble members used to compute the uncertainty range on hours-above-threshold
+  40 ensemble members (temperature, humidity, wind) used to compute the uncertainty
+  range on hours-above-threshold and the probability of a no-relief night
 
 Two requests per city per update (22 total), well within Open-Meteo's free tier.
 
@@ -123,10 +147,20 @@ Check on it with `tail logs/update.log`.
 
 ## Caveats
 
+- **Outdoor vs indoor:** we forecast *outdoor* temperature, but sleep and health
+  depend on the *bedroom*. Homes without air-conditioning often stay warmer than the
+  outside air overnight and cool more slowly, so indoor conditions can be worse than
+  these numbers suggest — and nearly all of the threshold evidence in the literature
+  is measured indoors. Treat outdoor feels-like as a proxy that may understate risk.
 - Forecasts, especially beyond 3–4 days, are uncertain — that's what the ranges are
   for. This is not an official heat warning; follow national meteorological services.
-- Nighttime WBGT here is a *no-solar* approximation from temperature and humidity at
-  a single grid point per city; urban heat islands can make real neighborhoods warmer.
+- Apparent temperature here is computed at a single grid point per city; urban heat
+  islands can make real neighbourhoods warmer.
+- Thresholds are absolute for readability; the epidemiology favours location-specific
+  (percentile) thresholds because of acclimatization.
 - The ensemble (ICON seamless) is coarser than the deterministic forecast, so the
   central "hours" estimate and the range can disagree slightly.
 - All times are local to each city; the overnight window is 21:00–09:00.
+
+See [`docs/RESEARCH.md`](docs/RESEARCH.md) for the literature review behind these
+choices, with sources.
