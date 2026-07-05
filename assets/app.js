@@ -48,7 +48,8 @@
     for (const th of DATA.thresholds) {
       if (th > lo && th < hi) {
         const col = th >= 25 ? "var(--danger)" : "var(--warn)";
-        s += `<line x1="0" x2="${W}" y1="${y(th)}" y2="${y(th)}" stroke="${col}" stroke-width="1" stroke-dasharray="3 3" opacity="0.7"/>`;
+        s += `<line x1="0" x2="${W - 22}" y1="${y(th)}" y2="${y(th)}" stroke="${col}" stroke-width="1" stroke-dasharray="3 3" opacity="0.7"/>`;
+        s += `<text x="${W - 2}" y="${(y(th) + 3.5).toFixed(1)}" text-anchor="end" fill="${col}" font-size="10" opacity="0.9">${th}°</text>`;
       }
     }
     const pts = curve.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
