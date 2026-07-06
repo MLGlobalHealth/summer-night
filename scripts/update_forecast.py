@@ -74,6 +74,8 @@ CITIES = [
     {"id": "bratislava", "name": "Bratislava", "country": "Slovakia", "lat": 48.1486, "lon": 17.1077},
     {"id": "copenhagen", "name": "Copenhagen", "country": "Denmark", "lat": 55.6761, "lon": 12.5683},
     {"id": "athens", "name": "Athens", "country": "Greece", "lat": 37.9838, "lon": 23.7275},
+    {"id": "marseille", "name": "Marseille", "country": "France", "lat": 43.2965, "lon": 5.3698},
+    {"id": "tbilisi", "name": "Tbilisi", "country": "Georgia", "lat": 41.7151, "lon": 44.8271},
 ]
 
 
