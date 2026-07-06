@@ -13,6 +13,12 @@
     const x = new Date(parseLocal(d + "T12:00"));
     return `${DAYS[x.getUTCDay()]} ${x.getUTCDate()} ${MONTHS[x.getUTCMonth()]}`;
   }
+  // Unambiguous span: evening (21:00) into the next morning (09:00).
+  function nightSpan(d) {
+    const a = new Date(parseLocal(d + "T12:00")), b = new Date(parseLocal(d + "T12:00") + 86400e3);
+    const aMo = a.getUTCMonth() === b.getUTCMonth() ? "" : " " + MONTHS[a.getUTCMonth()];
+    return `${DAYS[a.getUTCDay()]} ${a.getUTCDate()}${aMo} → ${DAYS[b.getUTCDay()]} ${b.getUTCDate()} ${MONTHS[b.getUTCMonth()]}`;
+  }
   function esc(s) {
     return String(s).replace(/[&<>"]/g, c =>
       ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -53,8 +59,9 @@
   function fmtHours(n, th) {
     const e = n.ens && n.ens[String(th)];
     if (!e) return `${n.hours_ge[String(th)]} h`;
-    return `<span class="big">${Math.round(e.median)} h</span>` +
-           `<span class="sub range">${Math.round(e.p10)}–${Math.round(e.p90)}</span>`;
+    const lo = Math.round(e.p10), hi = Math.round(e.p90);
+    const sub = lo === hi ? "" : `<span class="sub range">${lo}–${hi}</span>`;
+    return `<span class="big">${Math.round(e.median)} h</span>` + sub;
   }
 
   /* ---------- generic yearly bar chart ---------- */
@@ -90,9 +97,12 @@
   }
 
   /* ---------- render a city ---------- */
-  function renderCity(id) {
+  function renderCity(id, scroll) {
     const city = FC.cities.find(c => c.id === id);
+    if (!city) return;
     const climo = CLIMO && CLIMO.cities.find(c => c.id === id);
+    if (("#" + id) !== location.hash) history.replaceState(null, "", "#" + id);
+    if (scroll) document.getElementById("cityPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     document.getElementById("cityName").textContent = `${city.name}, ${city.country}`;
     document.getElementById("climoName").textContent = city.name;
 
@@ -106,7 +116,7 @@
     if (run.len >= 3) {
       lvl = "danger";
       msg = `<strong>${run.len} consecutive nights with no overnight relief</strong> ` +
-            `(${nightLabel(run.from)} → ${nightLabel(run.to)}): feels-like never drops below 20°. ` +
+            `(${nightLabel(run.from)} → ${nightLabel(run.to)}): the temperature never drops below 20°. ` +
             `This is the multi-day, no-recovery pattern most associated with elderly heat mortality.${ctx}`;
     } else if (run.len >= 1) {
       lvl = "warn";
@@ -114,7 +124,7 @@
             `(${nightLabel(run.from)}${run.len > 1 ? " → " + nightLabel(run.to) : ""}). ` +
             `Watch for the run extending — risk to vulnerable groups compounds across nights.${ctx}`;
     } else {
-      msg = `No no-relief nights forecast this week — every night cools below 20° feels-like. ` +
+      msg = `No no-relief nights forecast this week — every night cools below 20° at some point. ` +
             `Lower risk for vulnerable groups.${ctx}`;
     }
     mort.className = "headline mortality " + lvl;
@@ -131,9 +141,8 @@
         rareCell = `<span class="${pctClass(p)}">${rarity(p)}</span>`;
       }
       return `<tr class="${n.no_relief ? "warn" : ""}">
-        <td class="night-label">${nightLabel(n.date)}${n.no_relief ? ' <span class="norelief">no relief</span>' : ""}</td>
+        <td class="night-label">${nightSpan(n.date)}${n.no_relief ? ' <span class="norelief">no relief</span>' : ""}</td>
         <td><span class="big">${n.min_feels}°</span><span class="sub">${esc(n.min_feels_time)}</span></td>
-        <td>${n.min_temp}°</td>
         <td>${pctCell}</td>
         <td>${rareCell}</td>
         <td>${fmtHours(n, 20)}</td>
@@ -196,8 +205,13 @@
     const pills = document.getElementById("cityPills");
     pills.innerHTML = FC.cities.map(c => `<button data-city="${esc(c.id)}">${esc(c.name)}</button>`).join("");
     pills.querySelectorAll("button").forEach(b =>
-      b.addEventListener("click", () => renderCity(b.dataset.city)));
-    renderCity(FC.cities[0].id);
+      b.addEventListener("click", () => renderCity(b.dataset.city, true)));
+    const initial = FC.cities.find(c => c.id === location.hash.slice(1)) ? location.hash.slice(1) : FC.cities[0].id;
+    renderCity(initial, false);
+    window.addEventListener("hashchange", () => {
+      const id = location.hash.slice(1);
+      if (id && FC.cities.some(c => c.id === id)) renderCity(id, true);
+    });
   }
 
   const bust = "?t=" + Math.floor(Date.now() / 600000);

@@ -80,7 +80,7 @@ th, td { padding: 0.55rem 0.75rem; text-align: center; border-bottom: 1px solid 
 th { background: #141a29; font-weight: 600; color: var(--muted); }
 th .thin { font-weight: 400; font-size: 0.78rem; }
 tbody tr:last-child td { border-bottom: none; }
-td.night-label { text-align: left; font-weight: 600; }
+td.night-label { text-align: left; font-weight: 600; white-space: normal; }
 
 tr.warn td { background: var(--warn-bg); }
 tr.danger td { background: var(--danger-bg); }
@@ -120,6 +120,9 @@ tr.danger td.night-label::after { content: " 🔥"; }
   padding: 0.7rem 0.9rem; color: var(--text);
 }
 .epi-link a { color: var(--accent); font-weight: 600; white-space: nowrap; }
+.footnote { font-size: 0.85rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 0.9rem; }
+.footnote a { color: var(--accent); }
+sup a { text-decoration: none; }
 
 footer {
   text-align: center; color: var(--muted); font-size: 0.85rem;

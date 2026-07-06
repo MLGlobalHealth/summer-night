@@ -48,6 +48,7 @@ COUNTRIES = [
     {"geo": "AT", "country": "Austria", "cities": ["vienna"]},
     {"geo": "UK", "country": "United Kingdom", "cities": ["london"]},
     {"geo": "TR", "country": "Türkiye", "cities": ["istanbul"]},
+    {"geo": "SK", "country": "Slovakia", "cities": ["bratislava"]},
 ]
 # Cities with no Eurostat coverage (shown as "no data" on the site).
 UNCOVERED = {"moscow": "Russia", "saint-petersburg": "Russia", "kyiv": "Ukraine"}

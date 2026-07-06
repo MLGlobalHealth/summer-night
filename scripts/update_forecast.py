@@ -70,6 +70,7 @@ CITIES = [
     {"id": "rome", "name": "Rome", "country": "Italy", "lat": 41.9028, "lon": 12.4964},
     {"id": "bucharest", "name": "Bucharest", "country": "Romania", "lat": 44.4268, "lon": 26.1025},
     {"id": "vienna", "name": "Vienna", "country": "Austria", "lat": 48.2082, "lon": 16.3738},
+    {"id": "bratislava", "name": "Bratislava", "country": "Slovakia", "lat": 48.1486, "lon": 17.1077},
 ]
 
 

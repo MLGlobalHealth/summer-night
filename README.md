@@ -1,7 +1,7 @@
 # 🌙 Summer Night — overnight heat risk in European cities
 
 A static site showing **overnight "feels like" (Wet Bulb Globe Temperature) forecasts**
-for Paris and the 10 largest European cities, with an emphasis on nights where the
+for Paris and other major European cities, with an emphasis on nights where the
 feels-like temperature never drops below 20 °C or 25 °C — the nights that are hardest
 on human health.
 
@@ -86,6 +86,9 @@ flag to a per-city percentile is the most defensible future refinement.
   range on hours-above-threshold and the probability of a no-relief night
 
 Two requests per city per update (22 total), well within Open-Meteo's free tier.
+
+Each city is shareable via a URL hash, e.g. https://mlgh.net/summer-night/#rome or
+https://mlgh.net/summer-night/epi/#rome.
 
 ## Two sites
 
