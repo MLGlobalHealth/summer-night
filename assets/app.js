@@ -162,15 +162,18 @@
     } else if (sev === "warn") {
       msg += `<strong>It stays above 20° all night — a warm, restless night.</strong>`;
     } else if (ens20) {
-      const lo = Math.round(12 - ens20.p90), hi = Math.round(12 - ens20.p10);
-      if (lo >= 12) {
+      const lo = Math.round(ens20.p10), hi = Math.round(ens20.p90);
+      if (hi <= 0) {
         msg += `It stays below 20° all night — a comfortably cool night.`;
       } else {
         const span = lo === hi ? `${hi}` : `${lo} to ${hi}`;
-        msg += `<strong>${span} overnight hours</strong> stay below 20° — comfortable enough for most sleepers.`;
+        msg += `<strong>${span} overnight hours</strong> stay above 20° — cooler the rest of the night.`;
       }
     } else {
-      msg += `<strong>${12 - tonight.hours_ge["20"]} overnight hours</strong> stay below 20°.`;
+      const above = tonight.hours_ge["20"];
+      msg += above === 0
+        ? `It stays below 20° all night — a comfortably cool night.`
+        : `<strong>${above} overnight hours</strong> stay above 20°.`;
     }
     if (city.stale) msg += ` <span class="stale-note">⚠ latest fetch failed; showing last good forecast.</span>`;
     head.innerHTML = msg;
