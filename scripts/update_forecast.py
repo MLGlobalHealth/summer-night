@@ -57,14 +57,15 @@ THRESHOLDS = [20, 25]
 # minimum never drops below this - the body gets no cool recovery window.
 RELIEF_FLOOR = 20
 
-# Paris + the 10 largest European cities by population (city proper).
+# A selection of European cities (capitals + a few others of interest).
 CITIES = [
     {"id": "paris", "name": "Paris", "country": "France", "lat": 48.8566, "lon": 2.3522},
     {"id": "istanbul", "name": "Istanbul", "country": "Türkiye", "lat": 41.0082, "lon": 28.9784},
     {"id": "moscow", "name": "Moscow", "country": "Russia", "lat": 55.7558, "lon": 37.6173},
     {"id": "london", "name": "London", "country": "United Kingdom", "lat": 51.5074, "lon": -0.1278},
-    {"id": "saint-petersburg", "name": "Saint Petersburg", "country": "Russia", "lat": 59.9311, "lon": 30.3609},
+    {"id": "oxford", "name": "Oxford", "country": "United Kingdom", "lat": 51.7520, "lon": -1.2577},
     {"id": "berlin", "name": "Berlin", "country": "Germany", "lat": 52.5200, "lon": 13.4050},
+    {"id": "kaiserslautern", "name": "Kaiserslautern", "country": "Germany", "lat": 49.4401, "lon": 7.7491},
     {"id": "madrid", "name": "Madrid", "country": "Spain", "lat": 40.4168, "lon": -3.7038},
     {"id": "kyiv", "name": "Kyiv", "country": "Ukraine", "lat": 50.4501, "lon": 30.5234},
     {"id": "rome", "name": "Rome", "country": "Italy", "lat": 41.9028, "lon": 12.4964},

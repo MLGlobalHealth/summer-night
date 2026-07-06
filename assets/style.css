@@ -123,6 +123,11 @@ tr.danger td.night-label::after { content: " 🔥"; }
 .footnote { font-size: 0.85rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 0.9rem; }
 .footnote a { color: var(--accent); }
 sup a { text-decoration: none; }
+.sharelink {
+  font-size: 0.8rem; font-weight: 600; color: var(--accent); text-decoration: none;
+  margin-left: 0.5rem; white-space: nowrap; vertical-align: 0.1em;
+}
+.sharelink:hover { text-decoration: underline; }
 
 footer {
   text-align: center; color: var(--muted); font-size: 0.85rem;

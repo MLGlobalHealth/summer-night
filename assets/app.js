@@ -36,14 +36,16 @@
   }
 
   // Longest run of consecutive no-relief nights and its date span.
+  const hrs = n => `${n} hour${n === 1 ? "" : "s"}`;
+
   function fmtHours(night, th) {
     const det = night.hours_ge[String(th)];
     const ens = night.ens && night.ens[String(th)];
-    if (!ens) return `<span class="big">${det} h</span>`;
+    if (!ens) return `<span class="big">${hrs(det)}</span>`;
     const mid = Math.round(ens.median), lo = Math.round(ens.p10), hi = Math.round(ens.p90);
     // Only show a range when the ensemble actually spans more than one hour.
-    const sub = lo === hi ? "" : `<span class="sub range">${lo}–${hi} h likely</span>`;
-    return `<span class="big">${mid} h</span>` + sub;
+    const sub = lo === hi ? "" : `<span class="sub range">${lo}–${hi} hrs likely</span>`;
+    return `<span class="big">${hrs(mid)}</span>` + sub;
   }
 
   function esc(s) {
@@ -91,7 +93,9 @@
     const x = t => M.l + ((t - t0) / (t1 - t0)) * (W - M.l - M.r);
     const y = v => M.t + (1 - (v - lo) / (hi - lo)) * (H - M.t - M.b);
 
-    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Hourly overnight temperature">`;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Hourly overnight temperature for ${esc(city.name)}">`;
+    // City name baked into the image so a screenshot of the chart alone is labelled.
+    s += `<text x="${M.l}" y="11" fill="var(--text)" font-size="13" font-weight="700">${esc(city.name)} — overnight “feels like” temperature</text>`;
 
     // Night shading
     for (const n of city.nights) {
@@ -158,17 +162,15 @@
     } else if (sev === "warn") {
       msg += `<strong>It stays above 20° all night — a warm, restless night.</strong>`;
     } else if (ens20) {
-      const belowMed = Math.round(12 - ens20.median);
       const lo = Math.round(12 - ens20.p90), hi = Math.round(12 - ens20.p10);
-      if (belowMed >= 12) {
+      if (lo >= 12) {
         msg += `It stays below 20° all night — a comfortably cool night.`;
       } else {
-        const range = lo === hi ? "" : ` (likely ${lo}–${hi})`;
-        msg += `About <strong>${belowMed} of the 12 overnight hours</strong>${range} stay below 20° — ` +
-               `comfortable enough for most sleepers.`;
+        const span = lo === hi ? `${hi}` : `${lo} to ${hi}`;
+        msg += `<strong>${span} overnight hours</strong> stay below 20° — comfortable enough for most sleepers.`;
       }
     } else {
-      msg += `${12 - tonight.hours_ge["20"]} of the 12 overnight hours stay below 20°.`;
+      msg += `<strong>${12 - tonight.hours_ge["20"]} overnight hours</strong> stay below 20°.`;
     }
     if (city.stale) msg += ` <span class="stale-note">⚠ latest fetch failed; showing last good forecast.</span>`;
     head.innerHTML = msg;
@@ -186,6 +188,8 @@
         <td>${sparkline(n.feels_curve, lo, hi)}</td>
       </tr>`).join("");
 
+    document.getElementById("chartCity").textContent = city.name;
+    document.getElementById("chartShare").setAttribute("href", "#" + city.id);
     document.getElementById("chart").innerHTML = bigChart(city);
     document.getElementById("cityPanel").classList.remove("hidden");
   }
@@ -231,6 +235,20 @@
       `<button data-city="${esc(c.id)}">${esc(c.name)}</button>`).join("");
     pills.querySelectorAll("button").forEach(b =>
       b.addEventListener("click", () => selectCity(b.dataset.city, true)));
+
+    // "share" link: copy the full #city URL to the clipboard when possible.
+    const share = document.getElementById("chartShare");
+    share.addEventListener("click", (e) => {
+      const url = location.origin + location.pathname + share.getAttribute("href");
+      if (navigator.clipboard) {
+        e.preventDefault();
+        history.replaceState(null, "", share.getAttribute("href"));
+        navigator.clipboard.writeText(url).then(() => {
+          const t = share.querySelector(".sharetext");
+          if (t) { const old = t.textContent; t.textContent = "copied!"; setTimeout(() => { t.textContent = old; }, 1500); }
+        });
+      }
+    });
 
     renderOverview();
     const initial = data.cities.find(c => c.id === location.hash.slice(1)) ? location.hash.slice(1) : data.cities[0].id;

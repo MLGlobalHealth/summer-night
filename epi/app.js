@@ -56,12 +56,14 @@
     }
     return best;
   }
+  const hrs = n => `${n} hour${n === 1 ? "" : "s"}`;
+
   function fmtHours(n, th) {
     const e = n.ens && n.ens[String(th)];
-    if (!e) return `${n.hours_ge[String(th)]} h`;
+    if (!e) return hrs(n.hours_ge[String(th)]);
     const lo = Math.round(e.p10), hi = Math.round(e.p90);
-    const sub = lo === hi ? "" : `<span class="sub range">${lo}–${hi}</span>`;
-    return `<span class="big">${Math.round(e.median)} h</span>` + sub;
+    const sub = lo === hi ? "" : `<span class="sub range">${lo}–${hi} hrs</span>`;
+    return `<span class="big">${hrs(Math.round(e.median))}</span>` + sub;
   }
 
   /* ---------- generic yearly bar chart ---------- */

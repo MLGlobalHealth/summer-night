@@ -41,17 +41,17 @@ MIN_BASELINE = 3
 # Eurostat geo code per country, and which of our cities map to it.
 COUNTRIES = [
     {"geo": "FR", "country": "France", "cities": ["paris"]},
-    {"geo": "DE", "country": "Germany", "cities": ["berlin"]},
+    {"geo": "DE", "country": "Germany", "cities": ["berlin", "kaiserslautern"]},
     {"geo": "ES", "country": "Spain", "cities": ["madrid"]},
     {"geo": "IT", "country": "Italy", "cities": ["rome"]},
     {"geo": "RO", "country": "Romania", "cities": ["bucharest"]},
     {"geo": "AT", "country": "Austria", "cities": ["vienna"]},
-    {"geo": "UK", "country": "United Kingdom", "cities": ["london"]},
+    {"geo": "UK", "country": "United Kingdom", "cities": ["london", "oxford"]},
     {"geo": "TR", "country": "Türkiye", "cities": ["istanbul"]},
     {"geo": "SK", "country": "Slovakia", "cities": ["bratislava"]},
 ]
 # Cities with no Eurostat coverage (shown as "no data" on the site).
-UNCOVERED = {"moscow": "Russia", "saint-petersburg": "Russia", "kyiv": "Ukraine"}
+UNCOVERED = {"moscow": "Russia", "kyiv": "Ukraine"}
 
 
 def log(msg):
