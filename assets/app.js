@@ -105,11 +105,18 @@
     // City name baked into the image so a screenshot of the chart alone is labelled.
     s += `<text x="${M.l}" y="11" fill="var(--text)" font-size="13" font-weight="700">${esc(city.name)} — overnight “feels like” temperature</text>`;
 
-    // Night shading
+    // Overnight (21:00->09:00) windows: a cool tint marks them clearly. The
+    // temperature bottoms out inside these bands; daytime is the gaps between.
     for (const n of city.nights) {
       const ns = parseLocal(n.date + "T21:00"), ne = ns + 12 * 3600e3;
       const xa = Math.max(x(Math.max(ns, t0)), M.l), xb = Math.min(x(Math.min(ne, t1)), W - M.r);
-      if (xb > xa) s += `<rect x="${xa.toFixed(1)}" y="${M.t}" width="${(xb - xa).toFixed(1)}" height="${H - M.t - M.b}" fill="#ffffff" opacity="0.06"/>`;
+      if (xb <= xa) continue;
+      s += `<rect x="${xa.toFixed(1)}" y="${M.t}" width="${(xb - xa).toFixed(1)}" height="${H - M.t - M.b}" fill="#9db8ff" opacity="0.12"/>`;
+      const cx = (xa + xb) / 2;
+      // Label bands wide enough and clear of the top-left legend.
+      if (xb - xa > 26 && cx > M.l + 188) {
+        s += `<text x="${cx.toFixed(1)}" y="${M.t + 11}" text-anchor="middle" fill="var(--muted)" font-size="10">night</text>`;
+      }
     }
 
     // Horizontal gridlines + axis labels
