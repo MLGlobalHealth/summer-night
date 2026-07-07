@@ -142,8 +142,8 @@
                   `<span class="pctl-bar" style="width:${Math.max(4, Math.round(p))}%"></span>`;
         rareCell = `<span class="${pctClass(p)}">${rarity(p)}</span>`;
       }
-      return `<tr class="${n.no_relief ? "warn" : ""}">
-        <td class="night-label">${nightSpan(n.date)}${n.no_relief ? ' <span class="norelief">no relief</span>' : ""}</td>
+      return `<tr class="${n.observed ? "observed " : ""}${n.no_relief ? "warn" : ""}">
+        <td class="night-label">${nightSpan(n.date)}${n.observed ? ' <span class="obs-tag">observed</span>' : ""}${n.no_relief ? ' <span class="norelief">no relief</span>' : ""}</td>
         <td><span class="big">${n.min_feels}°</span><span class="sub">${esc(n.min_feels_time)}</span></td>
         <td>${pctCell}</td>
         <td>${rareCell}</td>

@@ -77,7 +77,9 @@
     const M = { l: 44, r: 12, t: 14, b: 34 };
     const times = city.hourly.time.map(parseLocal);
     const nowLocal = Date.now() + city.utc_offset_seconds * 1000;
-    const start = nowLocal - 6 * 3600e3;
+    // Start at the first shown night (includes the observed nights) or 6h ago.
+    const firstNight = city.nights[0];
+    const start = firstNight ? parseLocal(firstNight.date + "T21:00") : nowLocal - 6 * 3600e3;
     const i0 = Math.max(0, times.findIndex(t => t >= start));
     const idx = [];
     for (let i = i0; i < times.length; i++) {
@@ -129,17 +131,29 @@
       s += `<text x="${x(nowLocal) + 4}" y="${M.t + 12}" fill="var(--ok)" font-size="11">now</text>`;
     }
 
-    function path(series, dashed) {
+    // Draw a path over a subset of indices in a given colour/width.
+    function path(indices, stroke, width) {
       let d = "", pen = false;
-      for (const i of idx) {
-        const v = series[i];
+      for (const i of indices) {
+        const v = city.hourly.feels[i];
         if (v === null) { pen = false; continue; }
         d += `${pen ? "L" : "M"}${x(times[i]).toFixed(1)},${y(v).toFixed(1)}`;
         pen = true;
       }
-      return `<path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2.5"/>`;
+      return d ? `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${width}"/>` : "";
     }
-    s += path(city.hourly.feels);
+    // Observed segment (past, muted) up to and including "now"; forecast after.
+    const obs = idx.filter(i => times[i] <= nowLocal);
+    const fut = idx.filter(i => times[i] >= nowLocal);
+    s += path(obs, "var(--muted)", 2);
+    s += path(fut, "var(--accent)", 2.5);
+    // Legend for the two segments.
+    if (obs.length > 1) {
+      s += `<line x1="${M.l + 8}" x2="${M.l + 30}" y1="${M.t + 8}" y2="${M.t + 8}" stroke="var(--muted)" stroke-width="2"/>` +
+           `<text x="${M.l + 35}" y="${M.t + 12}" fill="var(--muted)" font-size="12">observed</text>` +
+           `<line x1="${M.l + 110}" x2="${M.l + 132}" y1="${M.t + 8}" y2="${M.t + 8}" stroke="var(--accent)" stroke-width="2.5"/>` +
+           `<text x="${M.l + 137}" y="${M.t + 12}" fill="var(--text)" font-size="12">forecast</text>`;
+    }
     return s + "</svg>";
   }
 
@@ -148,7 +162,7 @@
     document.getElementById("cityName").textContent =
       `${city.name}, ${city.country}` + (city.stale ? " (older data)" : "");
 
-    const tonight = city.nights[0];
+    const tonight = city.nights.find(n => !n.observed) || city.nights[0];
 
     /* Comfort / sleep headline */
     const head = document.getElementById("headline");
@@ -183,8 +197,8 @@
     const lo = Math.min(...allVals, 18) - 1, hi = Math.max(...allVals, 26) + 1;
     const tbody = document.querySelector("#nightTable tbody");
     tbody.innerHTML = city.nights.map(n => `
-      <tr class="${severity(n)}">
-        <td class="night-label">${nightSpan(n.date)}${n.no_relief ? ' <span class="norelief" title="Temperature never drops below 20° — no overnight recovery">no relief</span>' : ""}</td>
+      <tr class="${n.observed ? "observed " : ""}${severity(n)}">
+        <td class="night-label">${nightSpan(n.date)}${n.observed ? ' <span class="obs-tag">observed</span>' : ""}${n.no_relief ? ' <span class="norelief" title="Temperature never drops below 20° — no overnight recovery">no relief</span>' : ""}</td>
         <td><span class="big">${n.min_feels}°</span><span class="sub">at ${esc(n.min_feels_time)}</span></td>
         <td>${fmtHours(n, 20)}</td>
         <td>${fmtHours(n, 25)}</td>
@@ -199,7 +213,7 @@
 
   /* ---------- overview grid ---------- */
   function renderOverview() {
-    const dates = DATA.cities[0].nights.map(n => n.date);
+    const dates = DATA.cities[0].nights.filter(n => !n.observed).map(n => n.date);
     document.querySelector("#overview thead").innerHTML =
       "<tr><th>City</th>" + dates.map(d => `<th>${nightLabel(d)}</th>`).join("") + "</tr>";
     document.querySelector("#overview tbody").innerHTML = DATA.cities.map(c => {

@@ -84,6 +84,13 @@ td.night-label { text-align: left; font-weight: 600; white-space: normal; }
 
 tr.warn td { background: var(--warn-bg); }
 tr.danger td { background: var(--danger-bg); }
+tr.observed td { opacity: 0.72; }
+tr.observed td.night-label { opacity: 1; }
+.obs-tag {
+  display: inline-block; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.03em;
+  padding: 0.02rem 0.4rem; border-radius: 999px; margin-left: 0.35rem; vertical-align: 0.1em;
+  background: #2b3550; color: var(--muted); text-transform: uppercase;
+}
 tr.warn td.night-label::after { content: " 🥵"; }
 tr.danger td.night-label::after { content: " 🔥"; }
 

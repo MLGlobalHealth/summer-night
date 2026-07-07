@@ -50,6 +50,8 @@ ENSEMBLE_API = "https://ensemble-api.open-meteo.com/v1/ensemble"
 # Overnight window in local time: 21:00 -> 09:00 next morning (12 hours).
 NIGHT_START = 21
 NIGHT_HOURS = 12
+# How many already-elapsed nights to show as "observed" before tonight.
+PAST_NIGHTS = 2
 
 # Absolute feels-like thresholds (deg C apparent temperature).
 THRESHOLDS = [20, 25]
@@ -134,12 +136,16 @@ def night_window_indices(times, evening_date):
 
 
 def summarize_nights(times, temps, feels, ensemble_feels, now_local):
-    """Build per-night summaries. Nights are labeled by their evening date."""
+    """Build per-night summaries. Nights are labeled by their evening date.
+
+    Includes the two most recent (already-elapsed) nights as *observed*, then
+    tonight and the forecast week. Observed nights get no ensemble spread.
+    """
     today = now_local.date()
-    first_evening = today if now_local.hour >= 9 else today - timedelta(days=1)
+    tonight_evening = today if now_local.hour >= 9 else today - timedelta(days=1)
     nights = []
-    for d in range(0, 8):
-        evening = first_evening + timedelta(days=d)
+    for d in range(-PAST_NIGHTS, 8):
+        evening = tonight_evening + timedelta(days=d)
         idx = night_window_indices(times, evening.isoformat())
         if idx is None:
             continue
@@ -147,10 +153,12 @@ def summarize_nights(times, temps, feels, ensemble_feels, now_local):
         t = [temps[i] for i in idx]
         if any(v is None for v in w) or any(v is None for v in t):
             continue
+        observed = evening < tonight_evening
         min_i = min(range(len(w)), key=lambda i: w[i])
         min_feels = min(w)
         night = {
             "date": evening.isoformat(),
+            "observed": observed,
             "min_feels": round(min_feels, 1),
             "min_feels_time": times[idx[min_i]][11:16],
             "min_temp": round(min(t), 1),
@@ -165,6 +173,10 @@ def summarize_nights(times, temps, feels, ensemble_feels, now_local):
         for th in THRESHOLDS:
             night["hours_ge"][str(th)] = sum(1 for v in w if v >= th)
             night["all_above"][str(th)] = bool(min_feels > th)
+
+        if observed:
+            nights.append(night)
+            continue  # observed nights are actuals - no ensemble spread
 
         # Ensemble spread on hours-above-threshold and no-relief probability.
         member_hours = {str(th): [] for th in THRESHOLDS}
@@ -206,7 +218,7 @@ def build_city(city):
         "hourly": hourly_vars,
         "wind_speed_unit": "ms",
         "forecast_days": 8,
-        "past_days": 1,
+        "past_days": PAST_NIGHTS + 1,  # cover the observed overnight windows
         "timezone": "auto",
     })
     ens = fetch_json(ENSEMBLE_API, {

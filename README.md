@@ -17,7 +17,10 @@ local time**, labeled by the evening's date):
 - **Hours at or above 20 °C / 25 °C feels-like**, shown as the ensemble **median with a
   10th–90th percentile range** (e.g. *4 h (2–6)*) — the uncertainty comes from the
   40-member ICON weather ensemble
-- A **12-hour sparkline** of the overnight curve, and a 7-day hourly chart
+- The **last two nights of observed temperature** (marked "observed"), before tonight and
+  the forecast week, so you can see the trend the forecast is continuing
+- A **12-hour sparkline** of the overnight curve, and a 7-day hourly chart (observed portion
+  in grey, forecast in blue, split at "now")
 - Row highlighting: **orange** when feels-like stays ≥ 20 °C all night, **red** when it
   stays ≥ 25 °C all night
 - A **vulnerable-group / mortality banner** flagging *runs of consecutive nights with no
