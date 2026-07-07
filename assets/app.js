@@ -200,6 +200,19 @@
         ? `It stays below 20° all night — a comfortably cool night.`
         : `<strong>${above} overnight hours</strong> stay above 20°.`;
     }
+
+    // Compare tonight's low to the previous night (observed).
+    const ti = city.nights.indexOf(tonight);
+    const last = ti > 0 ? city.nights[ti - 1] : null;
+    if (last) {
+      const d = Math.round((tonight.min_feels - last.min_feels) * 10) / 10;
+      const ad = Math.abs(d).toFixed(1);
+      let cmp;
+      if (d >= 0.5) cmp = `it's <strong>${ad}° warmer</strong> — likely a worse night's sleep`;
+      else if (d <= -0.5) cmp = `it's <strong>${ad}° cooler</strong> — likely a better night's sleep`;
+      else cmp = `it's about the same`;
+      msg += ` Compared to last night (${nightSpan(last.date)}), ${cmp}.`;
+    }
     if (city.stale) msg += ` <span class="stale-note">⚠ latest fetch failed; showing last good forecast.</span>`;
     head.innerHTML = msg;
 

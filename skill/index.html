@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Summer Night · Skill — forecast vs observed</title>
+<meta name="description" content="How well the overnight heat forecast verifies: forecasted hours above 20°/25° compared to observed, by lead time, for European cities.">
+<link rel="stylesheet" href="../assets/style.css">
+<link rel="stylesheet" href="../epi/epi.css">
+</head>
+<body>
+<header>
+  <h1>🎯 Summer Night · <span class="epi-badge">Skill</span></h1>
+  <p class="subtitle">How well did the forecast do? We log the forecast for each night at every
+    lead time, then compare it to what was <strong>observed</strong> — for
+    <strong>hours ≥ 20°</strong> and <strong>hours ≥ 25°</strong> per night.</p>
+  <p class="updated" id="updated">Loading…</p>
+  <p class="backlink"><a href="../">&larr; Everyday view</a> · <a href="../epi/">Epi view</a></p>
+</header>
+
+<main>
+  <section>
+    <h3>Forecast error by lead time <span class="thin">— all cities</span></h3>
+    <p class="chart-note">For every night with both a logged forecast and an observation, the error is
+      (forecast − observed) hours. <strong>MAE</strong> is the mean absolute error (lower = better);
+      <strong>bias</strong> is the mean signed error (positive = the forecast over-predicts hot hours).
+      “Lead” is how many days ahead the forecast was made (0 = same evening).</p>
+    <div class="table-wrap">
+      <table id="skillTable">
+        <thead>
+          <tr>
+            <th>Lead<br><span class="thin">days ahead</span></th>
+            <th>Pairs<br><span class="thin">nights × cities</span></th>
+            <th>MAE hours ≥ 20°</th>
+            <th>Bias hours ≥ 20°</th>
+            <th>MAE hours ≥ 25°</th>
+            <th>Bias hours ≥ 25°</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="chart-note" id="sampleNote"></p>
+  </section>
+
+  <section>
+    <h3>Night by night <span class="thin" id="cityLabel"></span></h3>
+    <nav class="city-pills" id="cityPills" aria-label="Choose a city"></nav>
+    <p class="chart-note">Observed vs the forecast at 1 day and 3 days ahead. Error shown in brackets;
+      green = within 1 hour, amber = within 3, red = further off. Nights still to come show the current
+      forecast with no observation yet.</p>
+    <div class="table-wrap">
+      <table id="nightTable">
+        <thead>
+          <tr>
+            <th>Night</th>
+            <th>Observed<br><span class="thin">≥20° / ≥25°</span></th>
+            <th>Forecast 1 day ahead<br><span class="thin">≥20° / ≥25° (error)</span></th>
+            <th>Forecast 3 days ahead<br><span class="thin">≥20° / ≥25° (error)</span></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="explain">
+    <h3>How this works</h3>
+    <p>Every time the data updates (about every 3 hours), we record the forecast number of overnight
+      hours at or above 20° and 25° for each upcoming night, tagged by how many days ahead it is. When a
+      night has fully passed (09:00 local), we record what was actually observed. The tables above compare
+      the two.</p>
+    <p class="caveat"><strong>This measure accumulates.</strong> Logging began recently, so there are few
+      completed forecast-vs-observation pairs at first — a night forecast 3 days out only becomes a pair
+      once those 3 days have elapsed. The sample grows daily; come back in a week or two for a
+      well-populated skill table. “Observed” values come from Open-Meteo's recent analysis, the same
+      series that feeds the grey line on the everyday chart, not raw station data.</p>
+  </section>
+</main>
+
+<footer>
+  <p>Data: <a href="https://open-meteo.com/">Open-Meteo</a>. Static site, no tracking.
+    <a href="https://github.com/MLGlobalHealth/summer-night">Source on GitHub</a>.</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

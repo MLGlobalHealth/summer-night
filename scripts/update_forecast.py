@@ -38,11 +38,12 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUT_PATH = REPO_ROOT / "data" / "forecast.json"
+SKILL_PATH = REPO_ROOT / "data" / "skill.json"
 
 FORECAST_API = "https://api.open-meteo.com/v1/forecast"
 ENSEMBLE_API = "https://ensemble-api.open-meteo.com/v1/ensemble"
@@ -309,6 +310,47 @@ def build_city(city):
     }
 
 
+def update_skill(cities_out, now_utc):
+    """Accumulate a forecast-vs-observed log for hours >= 20/25 per night.
+
+    For each night we record the forecast at each lead time (days ahead) and,
+    once the night has fully elapsed, the observed value. Comparing the two over
+    time measures forecast skill. Grows across runs; pruned to ~30 days.
+    """
+    try:
+        skill = json.loads(SKILL_PATH.read_text()) if SKILL_PATH.exists() else {}
+    except json.JSONDecodeError:
+        skill = {}
+    skill.setdefault("cities", {})
+
+    for city in cities_out:
+        if city.get("stale"):
+            continue
+        cid = city["id"]
+        city_today = (now_utc + timedelta(seconds=city["utc_offset_seconds"])).date()
+        entry = skill["cities"].setdefault(cid, {"nights": {}})
+        entry["name"], entry["country"] = city["name"], city["country"]
+        entry.setdefault("nights", {})
+        for n in city["nights"]:
+            pair = {"h20": n["hours_ge"]["20"], "h25": n["hours_ge"]["25"]}
+            rec = entry["nights"].setdefault(n["date"], {"forecasts": {}, "observed": None})
+            if n["observed"]:
+                rec["observed"] = pair
+            elif not n.get("part_observed"):
+                lead = (date.fromisoformat(n["date"]) - city_today).days
+                if 0 <= lead <= 7:
+                    rec["forecasts"][str(lead)] = pair
+        cutoff = (city_today - timedelta(days=30)).isoformat()
+        entry["nights"] = {k: v for k, v in entry["nights"].items() if k >= cutoff}
+
+    skill["generated_utc"] = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+    skill["thresholds"] = THRESHOLDS
+    tmp = SKILL_PATH.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(skill, separators=(",", ":")))
+    tmp.replace(SKILL_PATH)
+    log(f"wrote {SKILL_PATH} ({SKILL_PATH.stat().st_size // 1024} KB)")
+
+
 def main():
     previous = {}
     if OUT_PATH.exists():
@@ -351,6 +393,12 @@ def main():
     tmp.write_text(json.dumps(out, separators=(",", ":")))
     tmp.replace(OUT_PATH)
     log(f"wrote {OUT_PATH} ({OUT_PATH.stat().st_size // 1024} KB)")
+
+    try:
+        update_skill(cities_out, datetime.now(timezone.utc))
+    except Exception as err:
+        log(f"skill log update failed (non-fatal): {err}")
+
     if failures:
         log(f"completed with failures: {', '.join(failures)}")
         sys.exit(2)

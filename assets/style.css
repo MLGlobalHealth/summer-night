@@ -146,6 +146,11 @@ footer a { color: var(--accent); }
 
 .hidden { display: none; }
 
+.err-ok { color: var(--ok); font-weight: 700; }
+.err-mid { color: var(--warn); font-weight: 700; }
+.err-hi { color: var(--danger); font-weight: 700; }
+.muted { color: var(--muted); }
+
 @media (max-width: 640px) {
   th, td { padding: 0.45rem 0.5rem; font-size: 0.88rem; }
   .headline { font-size: 1.05rem; }

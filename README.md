@@ -93,15 +93,18 @@ Two requests per city per update (22 total), well within Open-Meteo's free tier.
 Each city is shareable via a URL hash, e.g. https://mlgh.net/summer-night/#rome or
 https://mlgh.net/summer-night/epi/#rome.
 
-## Two sites
+## Three views
 
 - **Everyday view** — `/` (https://mlgh.net/summer-night/). "Will you sleep badly and drag
-  through work tomorrow?" Per-night feels-like, hours-above-threshold, and a *sleep-debt*
-  line for consecutive warm nights. No mortality framing.
+  through work tomorrow?" Per-night temperature, hours-above-threshold, the last two observed
+  nights, and a comparison of tonight to last night.
 - **Epi view** — `/epi/` (https://mlgh.net/summer-night/epi/). The public-health angle:
   a heat-**mortality** signal (consecutive no-relief nights), tonight benchmarked against
   each city's **climatology percentiles** (acclimatization-aware), and each country's
   **historical summer excess mortality**.
+- **Skill view** — `/skill/` (https://mlgh.net/summer-night/skill/). Forecast verification:
+  the logged forecast for each night (by lead time) vs what was **observed**, for hours ≥ 20°
+  and ≥ 25°. Accumulates over time — `data/skill.json` is appended on every forecast run.
 
 ## Repository layout
 
