@@ -107,16 +107,17 @@
 
     // Overnight (21:00->09:00) windows: a cool tint marks them clearly. The
     // temperature bottoms out inside these bands; daytime is the gaps between.
+    let lastNightCx = null;
     for (const n of city.nights) {
       const ns = parseLocal(n.date + "T21:00"), ne = ns + 12 * 3600e3;
       const xa = Math.max(x(Math.max(ns, t0)), M.l), xb = Math.min(x(Math.min(ne, t1)), W - M.r);
       if (xb <= xa) continue;
       s += `<rect x="${xa.toFixed(1)}" y="${M.t}" width="${(xb - xa).toFixed(1)}" height="${H - M.t - M.b}" fill="#9db8ff" opacity="0.12"/>`;
-      const cx = (xa + xb) / 2;
-      // Label bands wide enough and clear of the top-left legend.
-      if (xb - xa > 26 && cx > M.l + 188) {
-        s += `<text x="${cx.toFixed(1)}" y="${M.t + 11}" text-anchor="middle" fill="var(--muted)" font-size="10">night</text>`;
-      }
+      if (xb - xa > 26) lastNightCx = (xa + xb) / 2;
+    }
+    // A single "night" label on the right-most band, clear of the legend and "now".
+    if (lastNightCx !== null) {
+      s += `<text x="${lastNightCx.toFixed(1)}" y="${M.t + 11}" text-anchor="middle" fill="var(--muted)" font-size="10">night</text>`;
     }
 
     // Horizontal gridlines + axis labels
