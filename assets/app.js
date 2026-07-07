@@ -201,17 +201,36 @@
         : `<strong>${above} overnight hours</strong> stay above 20°.`;
     }
 
-    // Compare tonight's low to the previous night (observed).
+    // Best-estimate hours at/above a threshold (ensemble median, else actual).
+    const hrsGe = (n, th) => {
+      const e = n.ens && n.ens[String(th)];
+      return e ? Math.round(e.median) : n.hours_ge[String(th)];
+    };
+    // [warmer/cooler, worse/better] or null if about the same.
+    const cmpWord = d => d >= 0.5 ? ["warmer", "worse"] : d <= -0.5 ? ["cooler", "better"] : null;
     const ti = city.nights.indexOf(tonight);
+
+    // Compare tonight to the previous night (observed), including hours above.
     const last = ti > 0 ? city.nights[ti - 1] : null;
     if (last) {
       const d = Math.round((tonight.min_feels - last.min_feels) * 10) / 10;
-      const ad = Math.abs(d).toFixed(1);
-      let cmp;
-      if (d >= 0.5) cmp = `it's <strong>${ad}° warmer</strong> — likely a worse night's sleep`;
-      else if (d <= -0.5) cmp = `it's <strong>${ad}° cooler</strong> — likely a better night's sleep`;
-      else cmp = `it's about the same`;
-      msg += ` Compared to last night (${nightSpan(last.date)}), ${cmp}.`;
+      const w = cmpWord(d);
+      const lead = w
+        ? `it's <strong>${Math.abs(d).toFixed(1)}° ${w[0]}</strong> — likely a ${w[1]} night's sleep`
+        : `it's about the same`;
+      msg += ` Compared to last night (${nightSpan(last.date)}), ${lead}: ` +
+             `<strong>${hrsGe(tonight, 20)} h ≥ 20°</strong> and <strong>${hrsGe(tonight, 25)} h ≥ 25°</strong> ` +
+             `tonight, versus ${hrsGe(last, 20)} and ${hrsGe(last, 25)} last night.`;
+    }
+
+    // Predict tomorrow night relative to tonight (forecast).
+    const tmrw = city.nights[ti + 1];
+    if (tmrw) {
+      const d2 = Math.round((tmrw.min_feels - tonight.min_feels) * 10) / 10;
+      const w2 = cmpWord(d2);
+      const lead2 = w2 ? `<strong>${Math.abs(d2).toFixed(1)}° ${w2[0]}</strong>` : `about the same`;
+      msg += ` Tomorrow night (${nightSpan(tmrw.date)}) looks ${lead2} (low ${tmrw.min_feels}°), ` +
+             `with ${hrsGe(tmrw, 20)} h ≥ 20° and ${hrsGe(tmrw, 25)} h ≥ 25°.`;
     }
     if (city.stale) msg += ` <span class="stale-note">⚠ latest fetch failed; showing last good forecast.</span>`;
     head.innerHTML = msg;
