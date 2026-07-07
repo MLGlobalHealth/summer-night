@@ -58,6 +58,12 @@
   }
   const hrs = n => `${n} hour${n === 1 ? "" : "s"}`;
 
+  function obsTag(n) {
+    if (n.observed) return ' <span class="obs-tag">observed</span>';
+    if (n.part_observed) return ' <span class="obs-tag part">part observed</span>';
+    return "";
+  }
+
   function fmtHours(n, th) {
     const e = n.ens && n.ens[String(th)];
     if (!e) return hrs(n.hours_ge[String(th)]);
@@ -142,9 +148,9 @@
                   `<span class="pctl-bar" style="width:${Math.max(4, Math.round(p))}%"></span>`;
         rareCell = `<span class="${pctClass(p)}">${rarity(p)}</span>`;
       }
-      return `<tr class="${n.observed ? "observed " : ""}${n.no_relief ? "warn" : ""}">
-        <td class="night-label">${nightSpan(n.date)}${n.observed ? ' <span class="obs-tag">observed</span>' : ""}${n.no_relief ? ' <span class="norelief">no relief</span>' : ""}</td>
-        <td><span class="big">${n.min_feels}°</span><span class="sub">${esc(n.min_feels_time)}</span></td>
+      return `<tr class="${n.observed ? "observed " : ""}${n.part_observed ? "partobs " : ""}${n.no_relief ? "warn" : ""}">
+        <td class="night-label">${nightSpan(n.date)}${obsTag(n)}${n.no_relief ? ' <span class="norelief">no relief</span>' : ""}</td>
+        <td><span class="big">${n.min_feels}°</span><span class="sub">${esc(n.min_feels_time)}${n.part_observed && n.min_observed ? " (obs)" : ""}</span></td>
         <td>${pctCell}</td>
         <td>${rareCell}</td>
         <td>${fmtHours(n, 20)}</td>

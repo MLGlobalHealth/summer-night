@@ -38,7 +38,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -142,6 +142,7 @@ def summarize_nights(times, temps, feels, ensemble_feels, now_local):
     tonight and the forecast week. Observed nights get no ensemble spread.
     """
     today = now_local.date()
+    now_naive = now_local.replace(tzinfo=None)
     tonight_evening = today if now_local.hour >= 9 else today - timedelta(days=1)
     nights = []
     for d in range(-PAST_NIGHTS, 8):
@@ -153,14 +154,28 @@ def summarize_nights(times, temps, feels, ensemble_feels, now_local):
         t = [temps[i] for i in idx]
         if any(v is None for v in w) or any(v is None for v in t):
             continue
-        observed = evening < tonight_evening
+        # State of the 21:00 -> 09:00 window relative to "now":
+        #   observed      = window fully elapsed (actuals)
+        #   part_observed = window in progress (early hours actual, rest forecast)
+        #   forecast      = window not yet begun
+        window_start = datetime.combine(evening, time(NIGHT_START))
+        window_end = window_start + timedelta(hours=NIGHT_HOURS)
+        if now_naive >= window_end:
+            state = "observed"
+        elif now_naive <= window_start:
+            state = "forecast"
+        else:
+            state = "part_observed"
         min_i = min(range(len(w)), key=lambda i: w[i])
         min_feels = min(w)
+        min_dt = datetime.fromisoformat(times[idx[min_i]])
         night = {
             "date": evening.isoformat(),
-            "observed": observed,
+            "observed": state == "observed",
+            "part_observed": state == "part_observed",
             "min_feels": round(min_feels, 1),
             "min_feels_time": times[idx[min_i]][11:16],
+            "min_observed": bool(min_dt <= now_naive),
             "min_temp": round(min(t), 1),
             "feels_curve": [round(v, 1) for v in w],
             "hours_ge": {},
@@ -174,9 +189,9 @@ def summarize_nights(times, temps, feels, ensemble_feels, now_local):
             night["hours_ge"][str(th)] = sum(1 for v in w if v >= th)
             night["all_above"][str(th)] = bool(min_feels > th)
 
-        if observed:
+        if state != "forecast":
             nights.append(night)
-            continue  # observed nights are actuals - no ensemble spread
+            continue  # observed / part-observed nights carry no ensemble spread
 
         # Ensemble spread on hours-above-threshold and no-relief probability.
         member_hours = {str(th): [] for th in THRESHOLDS}

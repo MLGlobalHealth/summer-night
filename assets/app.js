@@ -38,6 +38,12 @@
   // Longest run of consecutive no-relief nights and its date span.
   const hrs = n => `${n} hour${n === 1 ? "" : "s"}`;
 
+  function obsTag(n) {
+    if (n.observed) return ' <span class="obs-tag">observed</span>';
+    if (n.part_observed) return ' <span class="obs-tag part">part observed</span>';
+    return "";
+  }
+
   function fmtHours(night, th) {
     const det = night.hours_ge[String(th)];
     const ens = night.ens && night.ens[String(th)];
@@ -125,34 +131,39 @@
         s += `<text x="${x(t).toFixed(1)}" y="${H - 10}" text-anchor="middle" fill="var(--muted)" font-size="12">${DAYS[d.getUTCDay()]} ${d.getUTCDate()}</text>`;
       }
     }
-    // "now" marker
+    // "now" marker, with the current local time written next to it.
     if (nowLocal > t0 && nowLocal < t1) {
+      const nd = new Date(nowLocal);
+      const hhmm = `${String(nd.getUTCHours()).padStart(2, "0")}:${String(nd.getUTCMinutes()).padStart(2, "0")}`;
       s += `<line x1="${x(nowLocal)}" x2="${x(nowLocal)}" y1="${M.t}" y2="${H - M.b}" stroke="var(--ok)" stroke-width="1.5" opacity="0.8"/>`;
-      s += `<text x="${x(nowLocal) + 4}" y="${M.t + 12}" fill="var(--ok)" font-size="11">now</text>`;
+      s += `<text x="${x(nowLocal) + 4}" y="${M.t + 12}" fill="var(--ok)" font-size="11">now ${hhmm}</text>`;
     }
 
-    // Draw a path over a subset of indices in a given colour/width.
-    function path(indices, stroke, width) {
-      let d = "", pen = false;
-      for (const i of indices) {
-        const v = city.hourly.feels[i];
-        if (v === null) { pen = false; continue; }
-        d += `${pen ? "L" : "M"}${x(times[i]).toFixed(1)},${y(v).toFixed(1)}`;
-        pen = true;
+    // Build [t, v] points and interpolate the value exactly at "now" so the
+    // observed (grey) and forecast (blue) segments join without a gap.
+    const pts = idx.filter(i => city.hourly.feels[i] !== null).map(i => [times[i], city.hourly.feels[i]]);
+    let nowVal = null;
+    for (let k = 0; k < pts.length - 1; k++) {
+      if (pts[k][0] <= nowLocal && nowLocal <= pts[k + 1][0]) {
+        const [ta, va] = pts[k], [tb, vb] = pts[k + 1];
+        nowVal = va + (vb - va) * ((nowLocal - ta) / (tb - ta || 1));
+        break;
       }
-      return d ? `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${width}"/>` : "";
     }
-    // Observed segment (past, muted) up to and including "now"; forecast after.
-    const obs = idx.filter(i => times[i] <= nowLocal);
-    const fut = idx.filter(i => times[i] >= nowLocal);
-    s += path(obs, "var(--muted)", 2);
-    s += path(fut, "var(--accent)", 2.5);
-    // Legend for the two segments.
-    if (obs.length > 1) {
+    const draw = (list, stroke, width) =>
+      list.length < 2 ? "" :
+      `<path d="${list.map((p, j) => `${j ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("")}" fill="none" stroke="${stroke}" stroke-width="${width}"/>`;
+    if (nowVal !== null) {
+      const obs = pts.filter(p => p[0] < nowLocal).concat([[nowLocal, nowVal]]);
+      const fut = [[nowLocal, nowVal]].concat(pts.filter(p => p[0] > nowLocal));
+      s += draw(obs, "var(--muted)", 2);
+      s += draw(fut, "var(--accent)", 2.5);
       s += `<line x1="${M.l + 8}" x2="${M.l + 30}" y1="${M.t + 8}" y2="${M.t + 8}" stroke="var(--muted)" stroke-width="2"/>` +
            `<text x="${M.l + 35}" y="${M.t + 12}" fill="var(--muted)" font-size="12">observed</text>` +
            `<line x1="${M.l + 110}" x2="${M.l + 132}" y1="${M.t + 8}" y2="${M.t + 8}" stroke="var(--accent)" stroke-width="2.5"/>` +
            `<text x="${M.l + 137}" y="${M.t + 12}" fill="var(--text)" font-size="12">forecast</text>`;
+    } else {
+      s += draw(pts, nowLocal >= t1 ? "var(--muted)" : "var(--accent)", 2.5);
     }
     return s + "</svg>";
   }
@@ -197,9 +208,9 @@
     const lo = Math.min(...allVals, 18) - 1, hi = Math.max(...allVals, 26) + 1;
     const tbody = document.querySelector("#nightTable tbody");
     tbody.innerHTML = city.nights.map(n => `
-      <tr class="${n.observed ? "observed " : ""}${severity(n)}">
-        <td class="night-label">${nightSpan(n.date)}${n.observed ? ' <span class="obs-tag">observed</span>' : ""}${n.no_relief ? ' <span class="norelief" title="Temperature never drops below 20° — no overnight recovery">no relief</span>' : ""}</td>
-        <td><span class="big">${n.min_feels}°</span><span class="sub">at ${esc(n.min_feels_time)}</span></td>
+      <tr class="${n.observed ? "observed " : ""}${n.part_observed ? "partobs " : ""}${severity(n)}">
+        <td class="night-label">${nightSpan(n.date)}${obsTag(n)}${n.no_relief ? ' <span class="norelief" title="Temperature never drops below 20° — no overnight recovery">no relief</span>' : ""}</td>
+        <td><span class="big">${n.min_feels}°</span><span class="sub">at ${esc(n.min_feels_time)}${n.part_observed && n.min_observed ? " (observed)" : ""}</span></td>
         <td>${fmtHours(n, 20)}</td>
         <td>${fmtHours(n, 25)}</td>
         <td>${sparkline(n.feels_curve, lo, hi)}</td>

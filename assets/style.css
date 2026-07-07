@@ -91,6 +91,8 @@ tr.observed td.night-label { opacity: 1; }
   padding: 0.02rem 0.4rem; border-radius: 999px; margin-left: 0.35rem; vertical-align: 0.1em;
   background: #2b3550; color: var(--muted); text-transform: uppercase;
 }
+.obs-tag.part { color: var(--accent); background: rgba(125, 180, 255, 0.14); }
+tr.partobs td { opacity: 1; }
 tr.warn td.night-label::after { content: " 🥵"; }
 tr.danger td.night-label::after { content: " 🔥"; }
 
