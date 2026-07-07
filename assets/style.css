@@ -26,6 +26,8 @@ header { text-align: center; padding: 2.2rem 1rem 0.5rem; }
 h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); margin: 0 0 0.4rem; }
 .subtitle { font-size: 1.15rem; color: var(--muted); max-width: 40rem; margin: 0 auto; }
 .updated { color: var(--muted); font-size: 0.9rem; margin-top: 0.8rem; }
+.backlink { margin-top: 0.4rem; }
+.backlink a { color: var(--accent); font-size: 0.9rem; }
 
 main { max-width: 62rem; margin: 0 auto; padding: 0 1rem 3rem; }
 section { margin-top: 2.2rem; }
