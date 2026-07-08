@@ -28,10 +28,13 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 OUT_PATH = REPO_ROOT / "data" / "climatology.json"
 ARCHIVE_API = "https://archive-api.open-meteo.com/v1/archive"
 
-START_YEAR, END_YEAR = 2005, 2024
+START_YEAR, END_YEAR = 1985, 2024   # 40-year record for the long-run trend
+PCTL_START_YEAR = 2005              # percentiles use the recent 20-yr window
 WARM_MONTHS = {5, 6, 7, 8, 9}          # evening-date months counted as "summer"
 NIGHT_START, NIGHT_HOURS = 21, 12
 THRESHOLDS = [20, 25]
+# Decade bins for the "then vs now" comparison (~40/30/20/10 years ago -> now).
+DECADES = [(1985, 1994), (1995, 2004), (2005, 2014), (2015, 2024)]
 
 # Same city list as the forecast script.
 from importlib import import_module  # noqa: E402
@@ -113,11 +116,14 @@ def build_city(city):
                     window.append(apparent_temp(t, rh, ws))
                 if ok:
                     mn = min(window)
-                    min_feels.append(mn)
                     h20 = sum(1 for v in window if v >= 20)
                     h25 = sum(1 for v in window if v >= 25)
-                    hours20.append(h20)
-                    hours25.append(h25)
+                    # Percentile tables use only the recent window (a stable normal);
+                    # per_year spans the full record for the long-run trend.
+                    if d.year >= PCTL_START_YEAR:
+                        min_feels.append(mn)
+                        hours20.append(h20)
+                        hours25.append(h25)
                     y = per_year.setdefault(d.year, {"nights": 0, "tn20": 0, "tn25": 0, "sum_min": 0.0})
                     y["nights"] += 1
                     y["sum_min"] += mn
@@ -141,6 +147,28 @@ def build_city(city):
         for y in sorted(per_year)
     ]
 
+    def decade_avg(lo, hi, key):
+        ys = [per_year[y] for y in range(lo, hi + 1) if y in per_year]
+        if not ys:
+            return None
+        if key == "min":
+            return round(sum(x["sum_min"] / x["nights"] for x in ys) / len(ys), 1)
+        return round(sum(x[key] for x in ys) / len(ys), 1)
+
+    decades = [
+        {
+            "label": f"{lo}–{hi}", "start": lo, "end": hi,
+            "tropical_nights_20": decade_avg(lo, hi, "tn20"),
+            "nights_25": decade_avg(lo, hi, "tn25"),
+            "mean_summer_min_feels": decade_avg(lo, hi, "min"),
+        }
+        for lo, hi in DECADES
+    ]
+
+    # "Averages N such nights a summer" should reflect the recent climate.
+    recent_tn20 = [per_year[y]["tn20"] for y in per_year if y >= PCTL_START_YEAR]
+    mean_tn20_recent = round(sum(recent_tn20) / len(recent_tn20), 1) if recent_tn20 else 0.0
+
     s = sorted(min_feels)
     return {
         "id": city["id"],
@@ -155,8 +183,9 @@ def build_city(city):
             "p98_min_feels": round(percentile(s, 0.98), 1),
             "p99_min_feels": round(percentile(s, 0.99), 1),
             "max_min_feels": round(s[-1], 1),
-            "mean_tropical_nights_20": round(sum(y["tropical_nights_20"] for y in yearly) / len(yearly), 1),
+            "mean_tropical_nights_20": mean_tn20_recent,
         },
+        "decades": decades,
         "yearly": yearly,
     }
 
@@ -164,26 +193,30 @@ def build_city(city):
 def main():
     force = "--force" in sys.argv
     previous = {}
-    if OUT_PATH.exists() and not force:
+    if OUT_PATH.exists():
         try:
             previous = {c["id"]: c for c in json.loads(OUT_PATH.read_text()).get("cities", [])}
         except (json.JSONDecodeError, KeyError):
             pass
 
+    # A city is up to date only if it already carries the new "decades" field.
+    def needs_rebuild(entry):
+        return force or entry is None or "decades" not in entry
+
     by_id = dict(previous)
     failures = []
     for city in CITIES:
-        if city["id"] in by_id and not force:
-            log(f"skip (already present): {city['id']}")
+        if not needs_rebuild(by_id.get(city["id"])):
+            log(f"skip (up to date): {city['id']}")
             continue
         try:
             by_id[city["id"]] = build_city(city)
             log(f"ok: {city['id']} ({by_id[city['id']]['n_nights']} nights)")
-            time.sleep(8)  # heavy archive requests: pace to avoid HTTP 429
+            time.sleep(15)  # heavy 40-year archive requests: pace to avoid HTTP 429
         except Exception as err:
             failures.append(city["id"])
-            log(f"FAILED {city['id']}: {err}")
-            time.sleep(20)
+            log(f"FAILED {city['id']}: {err} (keeping any previous data)")
+            time.sleep(30)
 
     cities = [by_id[c["id"]] for c in CITIES if c["id"] in by_id]
     if not cities:
@@ -193,11 +226,14 @@ def main():
     out = {
         "generated_utc": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": "Open-Meteo historical archive (ERA5 reanalysis)",
-        "baseline_period": f"{START_YEAR}-{END_YEAR}",
+        "record_period": f"{START_YEAR}-{END_YEAR}",
+        "baseline_period": f"{PCTL_START_YEAR}-{END_YEAR}",
+        "decades": [f"{lo}–{hi}" for lo, hi in DECADES],
         "warm_season_months": sorted(WARM_MONTHS),
         "night_window": {"start_hour": NIGHT_START, "hours": NIGHT_HOURS},
         "thresholds": THRESHOLDS,
-        "note": "Percentiles are over warm-season (May-Sep) overnight windows only.",
+        "note": ("Yearly counts span %d-%d; percentiles use the %d-%d window."
+                 % (START_YEAR, END_YEAR, PCTL_START_YEAR, END_YEAR)),
         "cities": cities,
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)

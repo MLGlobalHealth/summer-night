@@ -24,3 +24,12 @@
 .explain code { background: #0c1220; padding: 0.05rem 0.35rem; border-radius: 4px; font-size: 0.85em; }
 #mortCountry, #mortNote { color: var(--muted); }
 .nodata { color: var(--muted); padding: 1.5rem 0.5rem; text-align: center; font-style: italic; }
+
+.decade-compare { margin-bottom: 0.9rem; }
+.decade-head { margin: 0 0 0.5rem; font-size: 0.95rem; }
+.decade-table { width: 100%; font-variant-numeric: tabular-nums; }
+.decade-table th { font-size: 0.8rem; }
+.decade-table td:first-child, .decade-table th:first-child { text-align: left; color: var(--muted); }
+.decade-table td { font-weight: 600; }
+.decade-table tr.now td { background: var(--danger-bg); color: var(--danger); }
+.decade-table tr.now td:first-child { color: var(--danger); }

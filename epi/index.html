@@ -49,9 +49,11 @@
 
     <div class="two-col">
       <div>
-        <h3>Hot nights per summer <span class="thin">(overnight low ≥ 20°)</span></h3>
-        <p class="chart-note">Count of warm-season nights whose temperature stayed at or above
-          20° all night, by year. The dashed line is this city's 2005–2024 average.</p>
+        <h3>Hot nights per summer, 1985–2024 <span class="thin">(overnight low ≥ 20°)</span></h3>
+        <p class="chart-note">Count of warm-season nights whose temperature stayed at or above 20° all
+          night, every year for 40 years. This is why nights matter: they are warming fast. Dashed line
+          is the recent (2005–2024) average.</p>
+        <div id="decadeCompare" class="decade-compare"></div>
         <div id="climoChart" class="chart"></div>
       </div>
       <div>
@@ -92,7 +94,8 @@
       <li><strong>Forecast</strong>: <a href="https://open-meteo.com/">Open-Meteo</a> deterministic +
         40-member ICON ensemble (for the hours-above ranges).</li>
       <li><strong>Climatology</strong>: Open-Meteo historical archive (ERA5 reanalysis), warm-season
-        (May–Sep) overnight windows, 2005–2024. Percentiles are over this distribution.</li>
+        (May–Sep) overnight windows. The yearly/decade counts span the full 1985–2024 record;
+        percentiles use the recent 2005–2024 window as a stable normal.</li>
       <li><strong>Excess mortality</strong>: Eurostat <em>Deaths by week and sex</em>
         (<code>demo_r_mwk_ts</code>), national level. Summer = ISO weeks 22–36; expected = mean of the
         same week over the prior 5 years (≥3 required); excess = observed − expected; P-score =

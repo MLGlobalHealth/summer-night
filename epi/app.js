@@ -94,7 +94,8 @@
       const col = d.hi ? "var(--danger)" : d.value < 0 ? "var(--muted)" : "var(--warn)";
       const yy = y(Math.max(d.value, 0)), h0 = Math.abs(y(d.value) - y(0));
       s += `<rect x="${(x(i) - bw / 2).toFixed(1)}" y="${yy.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(h0, 0.5).toFixed(1)}" fill="${col}"><title>${esc(d.label)}: ${d.value}${opts.unit || ""}</title></rect>`;
-      if (series.length <= 24 && i % (series.length > 14 ? 2 : 1) === 0) {
+      const step = series.length > 24 ? 5 : series.length > 14 ? 2 : 1;
+      if (i % step === 0) {
         s += `<text x="${x(i).toFixed(1)}" y="${H - 24}" text-anchor="middle" fill="var(--muted)" font-size="9" transform="rotate(45 ${x(i).toFixed(1)} ${H - 24})">${esc(d.label)}</text>`;
       }
     });
@@ -158,8 +159,9 @@
       </tr>`;
     }).join("");
 
-    /* Climatology chart: tropical nights per year */
+    /* Climatology chart: tropical nights per year, full record */
     const climoEl = document.getElementById("climoChart");
+    const decadeEl = document.getElementById("decadeCompare");
     if (climo) {
       const maxTn = Math.max(...climo.yearly.map(y => y.tropical_nights_20));
       climoEl.innerHTML = barChart(
@@ -169,8 +171,35 @@
           hi: y.tropical_nights_20 >= Math.max(6, maxTn * 0.8),
         })),
         { avg: climo.stats.mean_tropical_nights_20, unit: "" });
+
+      // "Then vs now" decade comparison table: nights >=20, >=25, mean low.
+      if (climo.decades && decadeEl) {
+        const d = climo.decades.filter(x => x.tropical_nights_20 != null);
+        const first = d[0], last = d[d.length - 1];
+        const mult = first.tropical_nights_20 > 0
+          ? " (×" + (last.tropical_nights_20 / first.tropical_nights_20).toFixed(1) + ")"
+          : "";
+        const rows = d.map((x, i) => `<tr${i === d.length - 1 ? ' class="now"' : ""}>
+            <td>${esc(x.label)}</td>
+            <td>${x.tropical_nights_20}</td>
+            <td>${x.nights_25}</td>
+            <td>${x.mean_summer_min_feels}°</td>
+          </tr>`).join("");
+        decadeEl.innerHTML =
+          `<p class="decade-head">Warm nights are rising fast: in ${first.label}, ${first.name || city.name}
+             averaged <strong>${first.tropical_nights_20}</strong> nights a summer above 20°; in
+             ${last.label}, <strong>${last.tropical_nights_20}</strong>${mult}.</p>` +
+          `<table class="decade-table">
+            <thead><tr><th>Decade</th><th>Nights ≥ 20°<br><span class="thin">per summer</span></th>
+              <th>Nights ≥ 25°<br><span class="thin">per summer</span></th>
+              <th>Mean overnight low<br><span class="thin">feels-like</span></th></tr></thead>
+            <tbody>${rows}</tbody></table>`;
+      } else if (decadeEl) {
+        decadeEl.innerHTML = "";
+      }
     } else {
       climoEl.innerHTML = '<p class="nodata">No climatology for this city.</p>';
+      if (decadeEl) decadeEl.innerHTML = "";
     }
 
     /* Mortality chart: country summer excess by year */
