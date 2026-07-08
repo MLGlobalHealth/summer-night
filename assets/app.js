@@ -95,7 +95,10 @@
     if (idx.length < 2) return "<p>No hourly data.</p>";
 
     const t0 = times[idx[0]], t1 = times[idx[idx.length - 1]];
-    const vals = idx.map(i => city.hourly.feels[i]).filter(v => v !== null);
+    const HL = city.hourly;
+    // Central line = ensemble median where available (forecast), else the actual.
+    const cen = i => HL.feels_med[i] != null ? HL.feels_med[i] : HL.feels[i];
+    const vals = idx.flatMap(i => [cen(i), HL.feels_p10[i], HL.feels_p90[i]]).filter(v => v != null);
     let lo = Math.min(...vals, 18), hi = Math.max(...vals, 27);
     lo = Math.floor(lo / 5) * 5; hi = Math.ceil(hi / 5) * 5;
 
@@ -148,9 +151,20 @@
       s += `<text x="${x(nowLocal) + 4}" y="${M.t + 12}" fill="var(--ok)" font-size="11">now ${hhmm}</text>`;
     }
 
-    // Build [t, v] points and interpolate the value exactly at "now" so the
-    // observed (grey) and forecast (blue) segments join without a gap.
-    const pts = idx.filter(i => city.hourly.feels[i] !== null).map(i => [times[i], city.hourly.feels[i]]);
+    // Ensemble 10–90% band over the forecast horizon, drawn behind the line.
+    const band = idx.filter(i => HL.feels_p10[i] != null && HL.feels_p90[i] != null);
+    if (band.length >= 2) {
+      const top = band.map(i => `${x(times[i]).toFixed(1)},${y(HL.feels_p90[i]).toFixed(1)}`);
+      const bot = band.slice().reverse().map(i => `${x(times[i]).toFixed(1)},${y(HL.feels_p10[i]).toFixed(1)}`);
+      s += `<path d="M${top.join("L")}L${bot.join("L")}Z" fill="var(--accent)" opacity="0.16" stroke="none"/>`;
+      // faint envelope edges so the band reads clearly over the night shading
+      const edge = (key) => `<polyline points="${band.map(i => `${x(times[i]).toFixed(1)},${y(HL[key][i]).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--accent)" stroke-width="1" opacity="0.45" stroke-dasharray="2 2"/>`;
+      s += edge("feels_p90") + edge("feels_p10");
+    }
+
+    // Central line = median (forecast) / actual (observed); interpolate at "now"
+    // so the grey (observed) and blue (forecast) segments join without a gap.
+    const pts = idx.filter(i => cen(i) != null).map(i => [times[i], cen(i)]);
     let nowVal = null;
     for (let k = 0; k < pts.length - 1; k++) {
       if (pts[k][0] <= nowLocal && nowLocal <= pts[k + 1][0]) {
@@ -170,7 +184,7 @@
       s += `<line x1="${M.l + 8}" x2="${M.l + 30}" y1="${M.t + 8}" y2="${M.t + 8}" stroke="var(--muted)" stroke-width="2"/>` +
            `<text x="${M.l + 35}" y="${M.t + 12}" fill="var(--muted)" font-size="12">observed</text>` +
            `<line x1="${M.l + 110}" x2="${M.l + 132}" y1="${M.t + 8}" y2="${M.t + 8}" stroke="var(--accent)" stroke-width="2.5"/>` +
-           `<text x="${M.l + 137}" y="${M.t + 12}" fill="var(--text)" font-size="12">forecast</text>`;
+           `<text x="${M.l + 137}" y="${M.t + 12}" fill="var(--text)" font-size="12">forecast (median)</text>`;
     } else {
       s += draw(pts, nowLocal >= t1 ? "var(--muted)" : "var(--accent)", 2.5);
     }

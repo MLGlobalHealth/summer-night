@@ -137,11 +137,25 @@ def night_window_indices(times, evening_date):
     return idx
 
 
-def summarize_nights(times, temps, feels, ensemble_feels, now_local):
+def hourly_ensemble_stats(ensemble_feels, n_hours):
+    """Per-hour median and 10th/90th percentile of feels-like across members."""
+    med, p10, p90 = [None] * n_hours, [None] * n_hours, [None] * n_hours
+    for i in range(n_hours):
+        vals = sorted(m[i] for m in ensemble_feels if i < len(m) and m[i] is not None)
+        if len(vals) >= 5:
+            med[i] = round(percentile(vals, 0.50), 1)
+            p10[i] = round(percentile(vals, 0.10), 1)
+            p90[i] = round(percentile(vals, 0.90), 1)
+    return med, p10, p90
+
+
+def summarize_nights(times, temps, feels, feels_med, ensemble_feels, now_local):
     """Build per-night summaries. Nights are labeled by their evening date.
 
     Includes the two most recent (already-elapsed) nights as *observed*, then
-    tonight and the forecast week. Observed nights get no ensemble spread.
+    tonight and the forecast week. Forecast nights are summarised from the
+    ensemble-MEDIAN curve (so the table ties to the plotted median line);
+    observed / part-observed nights use the actuals and carry no ensemble spread.
     """
     today = now_local.date()
     now_naive = now_local.replace(tzinfo=None)
@@ -152,9 +166,9 @@ def summarize_nights(times, temps, feels, ensemble_feels, now_local):
         idx = night_window_indices(times, evening.isoformat())
         if idx is None:
             continue
-        w = [feels[i] for i in idx]
+        w_det = [feels[i] for i in idx]
         t = [temps[i] for i in idx]
-        if any(v is None for v in w) or any(v is None for v in t):
+        if any(v is None for v in w_det) or any(v is None for v in t):
             continue
         # State of the 21:00 -> 09:00 window relative to "now":
         #   observed      = window fully elapsed (actuals)
@@ -168,6 +182,9 @@ def summarize_nights(times, temps, feels, ensemble_feels, now_local):
             state = "forecast"
         else:
             state = "part_observed"
+        # Forecast nights summarise the ensemble-median curve; observed/part use actuals.
+        w_med = [feels_med[i] for i in idx]
+        w = w_med if state == "forecast" and all(v is not None for v in w_med) else w_det
         min_i = min(range(len(w)), key=lambda i: w[i])
         min_feels = min(w)
         min_dt = datetime.fromisoformat(times[idx[min_i]])
@@ -283,10 +300,12 @@ def build_city(city):
                 member.append(apparent_temp(et[j], er[j], ew[j]))
         ensemble_feels.append(member)
 
+    feels_med, feels_p10, feels_p90 = hourly_ensemble_stats(ensemble_feels, len(times))
+
     offset = timedelta(seconds=det["utc_offset_seconds"])
     now_local = datetime.now(timezone.utc) + offset
 
-    nights = summarize_nights(times, temps, feels, ensemble_feels, now_local)
+    nights = summarize_nights(times, temps, feels, feels_med, ensemble_feels, now_local)
     if not nights:
         raise RuntimeError(f"no complete nights computed for {city['id']}")
 
@@ -304,6 +323,9 @@ def build_city(city):
             "time": times,
             "temp": [None if v is None else round(v, 1) for v in temps],
             "feels": [None if v is None else round(v, 1) for v in feels],
+            "feels_med": feels_med,   # ensemble median (null where <5 members / past)
+            "feels_p10": feels_p10,   # 10th percentile band edge
+            "feels_p90": feels_p90,   # 90th percentile band edge
         },
         "nights": nights,
         "max_no_relief_run": max_run,
