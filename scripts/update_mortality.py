@@ -46,7 +46,7 @@ COUNTRIES = [
     {"geo": "IT", "country": "Italy", "cities": ["rome"]},
     {"geo": "RO", "country": "Romania", "cities": ["bucharest"]},
     {"geo": "AT", "country": "Austria", "cities": ["vienna"]},
-    {"geo": "UK", "country": "United Kingdom", "cities": ["london", "oxford"]},
+    {"geo": "UK", "country": "United Kingdom", "cities": ["london", "oxford", "edinburgh"]},
     {"geo": "TR", "country": "Türkiye", "cities": ["istanbul"]},
     {"geo": "SK", "country": "Slovakia", "cities": ["bratislava"]},
     {"geo": "DK", "country": "Denmark", "cities": ["copenhagen"]},

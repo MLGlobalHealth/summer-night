@@ -79,6 +79,7 @@ CITIES = [
     {"id": "athens", "name": "Athens", "country": "Greece", "lat": 37.9838, "lon": 23.7275},
     {"id": "marseille", "name": "Marseille", "country": "France", "lat": 43.2965, "lon": 5.3698},
     {"id": "tbilisi", "name": "Tbilisi", "country": "Georgia", "lat": 41.7151, "lon": 44.8271},
+    {"id": "edinburgh", "name": "Edinburgh", "country": "United Kingdom", "lat": 55.9533, "lon": -3.1883},
 ]
 
 
