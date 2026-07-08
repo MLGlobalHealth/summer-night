@@ -65,11 +65,13 @@
   }
 
   function fmtHours(n, th) {
+    // Headline = deterministic best estimate; ensemble gives the range.
+    const det = n.hours_ge[String(th)];
     const e = n.ens && n.ens[String(th)];
-    if (!e) return hrs(n.hours_ge[String(th)]);
+    if (!e) return hrs(det);
     const lo = Math.round(e.p10), hi = Math.round(e.p90);
     const sub = lo === hi ? "" : `<span class="sub range">${lo}–${hi} hrs</span>`;
-    return `<span class="big">${hrs(Math.round(e.median))}</span>` + sub;
+    return `<span class="big">${hrs(det)}</span>` + sub;
   }
 
   /* ---------- generic yearly bar chart ---------- */

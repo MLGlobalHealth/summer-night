@@ -45,13 +45,14 @@
   }
 
   function fmtHours(night, th) {
+    // Headline = the deterministic best estimate (the same run drawn in the chart),
+    // so the number matches the plotted curve. The ensemble gives the "likely" range.
     const det = night.hours_ge[String(th)];
     const ens = night.ens && night.ens[String(th)];
     if (!ens) return `<span class="big">${hrs(det)}</span>`;
-    const mid = Math.round(ens.median), lo = Math.round(ens.p10), hi = Math.round(ens.p90);
-    // Only show a range when the ensemble actually spans more than one hour.
+    const lo = Math.round(ens.p10), hi = Math.round(ens.p90);
     const sub = lo === hi ? "" : `<span class="sub range">${lo}–${hi} hrs likely</span>`;
-    return `<span class="big">${hrs(mid)}</span>` + sub;
+    return `<span class="big">${hrs(det)}</span>` + sub;
   }
 
   function esc(s) {
@@ -209,11 +210,8 @@
         : `<strong>${above} overnight hours</strong> stay above 20°.`;
     }
 
-    // Best-estimate hours at/above a threshold (ensemble median, else actual).
-    const hrsGe = (n, th) => {
-      const e = n.ens && n.ens[String(th)];
-      return e ? Math.round(e.median) : n.hours_ge[String(th)];
-    };
+    // Deterministic hours at/above a threshold — matches the table and the chart.
+    const hrsGe = (n, th) => n.hours_ge[String(th)];
     // [warmer/cooler, worse/better] or null if about the same.
     const cmpWord = d => d >= 0.5 ? ["warmer", "worse"] : d <= -0.5 ? ["cooler", "better"] : null;
     const ti = city.nights.indexOf(tonight);
