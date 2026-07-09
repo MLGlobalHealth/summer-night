@@ -82,6 +82,7 @@ CITIES = [
     {"id": "edinburgh", "name": "Edinburgh", "country": "United Kingdom", "lat": 55.9533, "lon": -3.1883},
     {"id": "geneva", "name": "Geneva", "country": "Switzerland", "lat": 46.2044, "lon": 6.1432},
     {"id": "warsaw", "name": "Warsaw", "country": "Poland", "lat": 52.2297, "lon": 21.0122},
+    {"id": "villars", "name": "Villars-sur-Ollon", "country": "Switzerland", "lat": 46.2989, "lon": 7.0553},
 ]
 
 

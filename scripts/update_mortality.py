@@ -51,7 +51,7 @@ COUNTRIES = [
     {"geo": "SK", "country": "Slovakia", "cities": ["bratislava"]},
     {"geo": "DK", "country": "Denmark", "cities": ["copenhagen"]},
     {"geo": "EL", "country": "Greece", "cities": ["athens"]},
-    {"geo": "CH", "country": "Switzerland", "cities": ["geneva"]},
+    {"geo": "CH", "country": "Switzerland", "cities": ["geneva", "villars"]},
     {"geo": "PL", "country": "Poland", "cities": ["warsaw"]},
 ]
 # Cities with no Eurostat coverage (shown as "no data" on the site).
