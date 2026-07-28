@@ -70,6 +70,8 @@ CITIES = [
     {"id": "berlin", "name": "Berlin", "country": "Germany", "lat": 52.5200, "lon": 13.4050},
     {"id": "kaiserslautern", "name": "Kaiserslautern", "country": "Germany", "lat": 49.4401, "lon": 7.7491},
     {"id": "bostalsee", "name": "Bostalsee", "country": "Germany", "lat": 49.5856, "lon": 7.0692},
+    {"id": "thehague", "name": "The Hague", "country": "Netherlands", "lat": 52.0705, "lon": 4.3007},
+    {"id": "liege", "name": "Liège", "country": "Belgium", "lat": 50.6326, "lon": 5.5797},
     {"id": "madrid", "name": "Madrid", "country": "Spain", "lat": 40.4168, "lon": -3.7038},
     {"id": "kyiv", "name": "Kyiv", "country": "Ukraine", "lat": 50.4501, "lon": 30.5234},
     {"id": "rome", "name": "Rome", "country": "Italy", "lat": 41.9028, "lon": 12.4964},
