@@ -69,6 +69,7 @@ CITIES = [
     {"id": "oxford", "name": "Oxford", "country": "United Kingdom", "lat": 51.7520, "lon": -1.2577},
     {"id": "berlin", "name": "Berlin", "country": "Germany", "lat": 52.5200, "lon": 13.4050},
     {"id": "kaiserslautern", "name": "Kaiserslautern", "country": "Germany", "lat": 49.4401, "lon": 7.7491},
+    {"id": "bostalsee", "name": "Bostalsee", "country": "Germany", "lat": 49.5856, "lon": 7.0692},
     {"id": "madrid", "name": "Madrid", "country": "Spain", "lat": 40.4168, "lon": -3.7038},
     {"id": "kyiv", "name": "Kyiv", "country": "Ukraine", "lat": 50.4501, "lon": 30.5234},
     {"id": "rome", "name": "Rome", "country": "Italy", "lat": 41.9028, "lon": 12.4964},
